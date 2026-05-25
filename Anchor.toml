@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-torix_program = "3oTd6QSkhh3bkfywReZiyacoGGT9im6xKHaZJSTuKDSQ"
+torix_program = "torXFavtJnaJzW7fz2NVrg9f1j824GitYi69zhmJQBK"
 
 [provider]
 cluster = "localnet"

@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("3oTd6QSkhh3bkfywReZiyacoGGT9im6xKHaZJSTuKDSQ");
+declare_id!("torXFavtJnaJzW7fz2NVrg9f1j824GitYi69zhmJQBK");
 
 #[program]
 pub mod torix_program {

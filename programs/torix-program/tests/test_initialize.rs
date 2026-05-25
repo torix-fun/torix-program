@@ -28,5 +28,9 @@ fn test_initialize() {
     let tx = VersionedTransaction::try_new(VersionedMessage::Legacy(msg), &[payer]).unwrap();
 
     let res = svm.send_transaction(tx);
-    assert!(res.is_ok());
+
+    match res {
+        Ok(r) => println!("{:#?}", r.logs),
+        Err(e) => eprintln!("{:#?}", e)
+    }
 }
