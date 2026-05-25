@@ -2,10 +2,12 @@ pub mod constants;
 pub mod error;
 pub mod instructions;
 pub mod state;
+pub mod pda;
 
 use anchor_lang::prelude::*;
 
 pub use constants::*;
+#[allow(ambiguous_glob_reexports)]
 pub use instructions::*;
 pub use state::*;
 
@@ -20,8 +22,12 @@ pub mod torix_program {
         launch::handler(ctx)
     }
 
-    pub fn initialize_round_idempotent(ctx: Context<InitializeRoundIdempotent>) -> Result<()> {
-        initialize_round_idempotent::handler(ctx)
+    pub fn start_round(ctx: Context<StartRound>) -> Result<()> {
+        start_round::handler(ctx)
+    }
+
+    pub fn end_round(ctx: Context<EndRound>) -> Result<()> {
+        end_round::handler(ctx)
     }
 
     pub fn buy_exact(ctx: Context<BuyExact>, sol_in: u64, min_tokens_out: u64) -> Result<()> {
@@ -30,10 +36,6 @@ pub mod torix_program {
 
     pub fn sell_exact(ctx: Context<SellExact>, tokens_in: u64, min_sol_out: u64) -> Result<()> {
         sell_exact::handler(ctx, tokens_in, min_sol_out)
-    }
-
-    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
-        claim_rewards::handler(ctx)
     }
 
     /// ## Unimplemented!
