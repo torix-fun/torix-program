@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     self,
+    Mint, 
+    TokenAccount,
     Token2022,
     TransferChecked,
 };
@@ -54,16 +56,23 @@ pub struct SellExact<'info> {
     /// CHECK: validated by address constraint
     pub fee_recipient: SystemAccount<'info>,
 
-    /// CHECK: validated against curve.mint
-    pub mint: UncheckedAccount<'info>,
+    pub mint: InterfaceAccount<'info, Mint>,
 
-    #[account(mut)]
-    /// CHECK: validated as ATA of curve for this mint
-    pub curve_token_account: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = curve,
+        associated_token::token_program = token_program
+    )]
+    pub curve_token_account: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut)]
-    /// CHECK: validated as ATA of user for this mint
-    pub user_token_account: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint,
+        associated_token::authority = user,
+        associated_token::token_program = token_program
+    )]
+    pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token2022>,
     pub system_program: Program<'info, System>

@@ -5,7 +5,6 @@ pub mod state;
 
 use anchor_lang::prelude::*;
 
-pub use constants::*;
 #[allow(ambiguous_glob_reexports)]
 pub use instructions::*;
 pub use state::*;

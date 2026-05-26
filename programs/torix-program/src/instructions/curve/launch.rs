@@ -156,17 +156,14 @@ pub fn handler(ctx: Context<Launch>) -> Result<()> {
     )?;
 
     let curve = &mut accs.curve;
+    
     curve.bump = bumps.curve;
     curve.status = CurveStatus::Active;
-    curve.stats = CurveStats {
-        volume_sol: 0,
-        sell_transactions: 0,
-        buy_transactions: 0,
-    };
+    curve.stats = CurveStats::default();
     curve.round = accs.round.key();
     curve.creator = accs.user.key();
     curve.mint = accs.mint.key();
-    curve.real_reserves_sol = 0;
+    curve.real_reserves_sol = u64::default();
     curve.real_reserves_tokens = TOTAL_SUPPLY;
     curve.virtual_reserves_sol = INITIAL_VIRTUAL_SOL_RESERVES;
     curve.virtual_reserves_tokens = INITIAL_VIRTUAL_TOKEN_RESERVES;

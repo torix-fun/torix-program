@@ -9,7 +9,7 @@ pub enum CurveStatus {
 }
 
 #[account]
-#[derive(InitSpace)]
+#[derive(InitSpace, Default)]
 pub struct CurveStats {
     pub volume_sol: u64,
     pub sell_transactions: u64,
