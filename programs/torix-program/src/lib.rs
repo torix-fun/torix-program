@@ -26,8 +26,8 @@ pub mod torix_program {
         start_round::handler(ctx)
     }
 
-    pub fn end_round(ctx: Context<EndRound>) -> Result<()> {
-        end_round::handler(ctx)
+    pub fn end_round<'info>(ctx: Context<'info, EndRound<'info>>, amounts: Vec<u64>) -> Result<()> {
+        end_round::handler(ctx, amounts)
     }
 
     pub fn buy_exact(ctx: Context<BuyExact>, sol_in: u64, min_tokens_out: u64) -> Result<()> {
@@ -36,6 +36,19 @@ pub mod torix_program {
 
     pub fn sell_exact(ctx: Context<SellExact>, tokens_in: u64, min_sol_out: u64) -> Result<()> {
         sell_exact::handler(ctx, tokens_in, min_sol_out)
+    }
+
+    /// ## Admin init global config instruction
+    pub fn initialize_global(
+        ctx: Context<InitializeGlobal>,
+        args: InitializeGlobalArgs
+    ) -> Result<()> {
+        initialize_global::handler(ctx, args)
+    }
+
+    /// ## Admin update global config instruction
+    pub fn update_global(ctx: Context<UpdateGlobal>) -> Result<()> {
+        update_global::handler(ctx)
     }
 
     /// ## Unimplemented!

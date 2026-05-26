@@ -6,9 +6,7 @@ use anchor_lang::prelude::*;
 pub struct RoundState {
     pub bump: u8,
 
-    pub vault: Pubkey,
-
-    pub top_curves: [Pubkey; 10]
+    pub vault: Pubkey
 }
 
 #[account]

@@ -27,6 +27,8 @@ pub struct CurveState {
 
     pub round: Pubkey,
 
+    pub creator: Pubkey,
+
     pub real_reserves_sol: u64,
     pub real_reserves_tokens: u64, 
     

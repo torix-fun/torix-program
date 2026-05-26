@@ -8,6 +8,11 @@ pub struct GlobalConfig {
 
     pub bump: u8,
     
+    pub winners_per_round: u16,
+
+    /// Only this account is allowed to invoke `update_global` instruction
+    pub protocol_authority: Pubkey,
+
     /// Only this account is allowed to invoke `end_round` instruction
     pub end_round_authority: Pubkey,
 
