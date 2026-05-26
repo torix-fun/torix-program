@@ -52,6 +52,7 @@ pub struct BuyExact<'info> {
     pub round_vault: Account<'info, RoundVault>,
 
     #[account(
+        mut,
         address = global_config.fee_recipient
     )]
     /// CHECK: validated by address constraint
@@ -60,9 +61,11 @@ pub struct BuyExact<'info> {
     /// CHECK: validated against curve.mint
     pub mint: UncheckedAccount<'info>,
 
+    #[account(mut)]
     /// CHECK: validated as ATA of curve for this mint
     pub curve_token_account: UncheckedAccount<'info>,
 
+    #[account(mut)]
     /// CHECK: validated as ATA of user for this mint
     pub user_token_account: UncheckedAccount<'info>,
 
@@ -117,21 +120,6 @@ pub fn handler(
         );
     }
 
-    let curve_key = accs.curve.key();
-
-    solana_program::program::invoke(
-        &solana_program::system_instruction::transfer(
-            &accs.user.key(),
-            &curve_key,
-            sol_in,
-        ),
-        &[
-            accs.user.to_account_info(),
-            accs.curve.to_account_info(),
-            accs.system_program.to_account_info(),
-        ],
-    )?;
-
     let fee_bps = accs.global_config.fee_bps as u64;
     let round_fee_bps = accs.global_config.round_fee_bps as u64;
     let fee_den = FEE_DENOMINATOR as u64;
@@ -156,43 +144,51 @@ pub fn handler(
         .checked_sub(total_fee)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
-    let curve_seeds = &[
-        CURVE_SEED.as_bytes(),
-        accs.curve.creator.as_ref(),
-        accs.curve.mint.as_ref(),
-        &[accs.curve.bump],
-    ];
-    let signer_seeds = &[&curve_seeds[..]];
+    let curve_key = accs.curve.key();
 
+    // Transfer net_sol from user to curve
+    solana_program::program::invoke(
+        &solana_program::system_instruction::transfer(
+            &accs.user.key(),
+            &curve_key,
+            net_sol,
+        ),
+        &[
+            accs.user.to_account_info(),
+            accs.curve.to_account_info(),
+            accs.system_program.to_account_info(),
+        ],
+    )?;
+
+    // Transfer protocol_fee from user to fee_recipient
     if protocol_fee > 0 {
-        solana_program::program::invoke_signed(
+        solana_program::program::invoke(
             &solana_program::system_instruction::transfer(
-                &curve_key,
+                &accs.user.key(),
                 &accs.fee_recipient.key(),
                 protocol_fee,
             ),
             &[
-                accs.curve.to_account_info(),
+                accs.user.to_account_info(),
                 accs.fee_recipient.to_account_info(),
                 accs.system_program.to_account_info(),
             ],
-            signer_seeds,
         )?;
     }
 
+    // Transfer round_fee from user to round_vault
     if round_fee > 0 {
-        solana_program::program::invoke_signed(
+        solana_program::program::invoke(
             &solana_program::system_instruction::transfer(
-                &curve_key,
+                &accs.user.key(),
                 &accs.round_vault.key(),
                 round_fee,
             ),
             &[
-                accs.curve.to_account_info(),
+                accs.user.to_account_info(),
                 accs.round_vault.to_account_info(),
                 accs.system_program.to_account_info(),
             ],
-            signer_seeds,
         )?;
     }
 
@@ -216,6 +212,14 @@ pub fn handler(
         tokens_out >= min_tokens_out,
         ErrorCode::SlippageExceeded
     );
+
+    let curve_seeds = &[
+        CURVE_SEED.as_bytes(),
+        accs.curve.creator.as_ref(),
+        accs.curve.mint.as_ref(),
+        &[accs.curve.bump],
+    ];
+    let signer_seeds = &[&curve_seeds[..]];
 
     token_interface::transfer_checked(
         CpiContext::new_with_signer(

@@ -2,7 +2,7 @@ use std::ops::Add;
 use anchor_lang::prelude::*;
 
 use crate::{
-    state::*, 
+    state::*,
     constants::*
 };
 
@@ -38,7 +38,7 @@ pub struct StartRound<'info> {
     pub system_program: Program<'info, System>
 }
 
-pub fn handler(ctx: Context<StartRound>) -> Result<()> {
+pub fn handler(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
@@ -46,7 +46,7 @@ pub fn handler(ctx: Context<StartRound>) -> Result<()> {
 
     let end_timestamp: i64 = clock
         .unix_timestamp
-        .add(ONE_DAY_IN_SECONDS);
+        .add(duration_seconds);
 
     accs.round.bump = bumps.round;
     accs.round_vault.bump = bumps.round_vault;

@@ -22,8 +22,8 @@ pub mod torix_program {
         launch::handler(ctx)
     }
 
-    pub fn start_round(ctx: Context<StartRound>) -> Result<()> {
-        start_round::handler(ctx)
+    pub fn start_round(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
+        start_round::handler(ctx, duration_seconds)
     }
 
     pub fn end_round<'info>(ctx: Context<'info, EndRound<'info>>, amounts: Vec<u64>) -> Result<()> {

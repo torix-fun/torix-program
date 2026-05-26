@@ -16,6 +16,7 @@ pub struct EndRound<'info> {
     pub user: Signer<'info>,
 
     #[account(
+        mut,
         seeds = [
             ROUND_SEED.as_bytes()
         ],
@@ -42,6 +43,7 @@ pub struct EndRound<'info> {
     pub global_config: Account<'info, GlobalConfig>,
 
     #[account(
+        mut,
         address = global_config.fee_recipient
     )]
     pub fee_recipient: SystemAccount<'info>,

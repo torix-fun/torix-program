@@ -1,7 +1,4 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program,
-};
+use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{
     self,
     Token2022,
@@ -52,6 +49,7 @@ pub struct SellExact<'info> {
     pub round_vault: Account<'info, RoundVault>,
 
     #[account(
+        mut,
         address = global_config.fee_recipient
     )]
     /// CHECK: validated by address constraint
@@ -60,9 +58,11 @@ pub struct SellExact<'info> {
     /// CHECK: validated against curve.mint
     pub mint: UncheckedAccount<'info>,
 
+    #[account(mut)]
     /// CHECK: validated as ATA of curve for this mint
     pub curve_token_account: UncheckedAccount<'info>,
 
+    #[account(mut)]
     /// CHECK: validated as ATA of user for this mint
     pub user_token_account: UncheckedAccount<'info>,
 
@@ -176,61 +176,19 @@ pub fn handler(
         ErrorCode::SlippageExceeded
     );
 
-    let curve_key = accs.curve.key();
-    let curve_seeds = &[
-        CURVE_SEED.as_bytes(),
-        accs.curve.creator.as_ref(),
-        accs.curve.mint.as_ref(),
-        &[accs.curve.bump],
-    ];
-    let signer_seeds = &[&curve_seeds[..]];
-
     if net_sol_out > 0 {
-        solana_program::program::invoke_signed(
-            &solana_program::system_instruction::transfer(
-                &curve_key,
-                &accs.user.key(),
-                net_sol_out,
-            ),
-            &[
-                accs.curve.to_account_info(),
-                accs.user.to_account_info(),
-                accs.system_program.to_account_info(),
-            ],
-            signer_seeds,
-        )?;
+        accs.curve.sub_lamports(net_sol_out)?;
+        accs.user.add_lamports(net_sol_out)?;
     }
 
     if protocol_fee > 0 {
-        solana_program::program::invoke_signed(
-            &solana_program::system_instruction::transfer(
-                &curve_key,
-                &accs.fee_recipient.key(),
-                protocol_fee,
-            ),
-            &[
-                accs.curve.to_account_info(),
-                accs.fee_recipient.to_account_info(),
-                accs.system_program.to_account_info(),
-            ],
-            signer_seeds,
-        )?;
+        accs.curve.sub_lamports(protocol_fee)?;
+        accs.fee_recipient.add_lamports(protocol_fee)?;
     }
 
     if round_fee > 0 {
-        solana_program::program::invoke_signed(
-            &solana_program::system_instruction::transfer(
-                &curve_key,
-                &accs.round_vault.key(),
-                round_fee,
-            ),
-            &[
-                accs.curve.to_account_info(),
-                accs.round_vault.to_account_info(),
-                accs.system_program.to_account_info(),
-            ],
-            signer_seeds,
-        )?;
+        accs.curve.sub_lamports(round_fee)?;
+        accs.round_vault.add_lamports(round_fee)?;
     }
 
     let curve = &mut accs.curve;

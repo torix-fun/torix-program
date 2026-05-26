@@ -13,6 +13,13 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test -- --nocapture"
+test = "cargo test -- --nocapture && NODE_OPTIONS='--no-experimental-strip-types' yarn ts-mocha -p tsconfig.json tests/**/*.test.ts --timeout 120000"
+
+[test]
+startup_wait = 5000
+
+[[test.validator.clone]]
+url = "https://api.mainnet-beta.solana.com"
+address = "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
 
 [hooks]

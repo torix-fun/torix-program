@@ -24,7 +24,9 @@ fn test_start_round() {
 
     let instruction = Instruction::new_with_bytes(
         program_id,
-        &torix_program::instruction::StartRound {}.data(),
+        &torix_program::instruction::StartRound {
+            duration_seconds: 86400,
+        }.data(),
         torix_program::accounts::StartRound {
             user,
             round,
