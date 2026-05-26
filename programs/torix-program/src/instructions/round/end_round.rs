@@ -1,7 +1,4 @@
-use anchor_lang::{
-    prelude::*,
-    solana_program::{program::invoke_signed, system_instruction}
-};
+use anchor_lang::prelude::*;
 
 use crate::{
     state::*, 
@@ -62,9 +59,12 @@ pub fn handler<'info>(
     // CURVES[i].creator == WINNERS[i].key() 
     let remaining_accs = ctx.remaining_accounts;
 
-    let total_winners_from_remaining_accs: u16 = remaining_accs
-        .len()
-        .saturating_div(2) as u16;
+    let winners_per_round = accs.global_config.winners_per_round;
+
+    require_eq!(
+        remaining_accs.len(), 
+        (winners_per_round * 2u16) as usize
+    );
 
     let total_transfers: u16 = amounts
         .len()
@@ -74,13 +74,6 @@ pub fn handler<'info>(
         .iter()
         .try_fold(0u64, |acc, x| acc.checked_add(*x))
         .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let winners_per_round = accs.global_config.winners_per_round;
-
-    require_eq!(
-        total_winners_from_remaining_accs, 
-        winners_per_round
-    );
 
     require_eq!(
         total_transfers,
@@ -94,8 +87,6 @@ pub fn handler<'info>(
 
     let winners = &remaining_accs[..winners_per_round as usize];
     let curves = &remaining_accs[winners_per_round as usize..];
-
-    let round_vault_key = accs.round_vault.key();
 
     for i in 0..winners_per_round as usize {
         let winner = &winners[i];
@@ -127,25 +118,8 @@ pub fn handler<'info>(
             winner.key()
         );
 
-        let transfer_ix = system_instruction::transfer(
-            &round_vault_key, 
-            winner.key, 
-            amount
-        );
-
-        invoke_signed(
-            &transfer_ix, 
-            &[
-                accs.round_vault.to_account_info(),
-                winner.clone(),
-                accs.system_program.to_account_info()
-            ], 
-            &[&[
-                ROUND_VAULT_SEED.as_bytes(),
-                accs.round.key().as_ref(),
-                &[accs.round_vault.bump]
-            ]]
-        )?;
+        winner.add_lamports(amount)?;
+        accs.round_vault.sub_lamports(amount)?;
     }
 
     Ok(())
