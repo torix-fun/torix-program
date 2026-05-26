@@ -29,6 +29,11 @@ pub fn handler(
 ) -> Result<()> {
     let config = &mut ctx.accounts.global_config;
 
+    require_gte!(
+        args.fee_bps,
+        args.round_fee_bps
+    );
+
     config.protocol_authority = args.protocol_authority;
     config.end_round_authority = args.end_round_authority;
     config.migration_authority = args.migration_authority;

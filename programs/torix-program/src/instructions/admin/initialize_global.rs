@@ -42,6 +42,11 @@ pub fn handler(
 ) -> Result<()> {
     let config = &mut ctx.accounts.global_config;
 
+    require_gte!(
+        args.fee_bps,
+        args.round_fee_bps
+    );
+
     config.bump = ctx.bumps.global_config;
     config.protocol_version = 1;
 
