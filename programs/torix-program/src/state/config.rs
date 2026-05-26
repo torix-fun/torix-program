@@ -10,13 +10,14 @@ pub struct GlobalConfig {
     
     pub winners_per_round: u16,
 
-    /// Only this account is allowed to invoke `update_global` instruction
+    pub fee_bps: u16,
+
+    pub round_fee_bps: u16,
+
     pub protocol_authority: Pubkey,
 
-    /// Only this account is allowed to invoke `end_round` instruction
     pub end_round_authority: Pubkey,
 
-    /// Only this account is allowed to invoke `start_migration`, `migrate_liquidity` instructions
     pub migration_authority: Pubkey,
     
     pub fee_recipient: Pubkey

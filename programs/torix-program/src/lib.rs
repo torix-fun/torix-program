@@ -47,8 +47,11 @@ pub mod torix_program {
     }
 
     /// ## Admin update global config instruction
-    pub fn update_global(ctx: Context<UpdateGlobal>) -> Result<()> {
-        update_global::handler(ctx)
+    pub fn update_global(
+        ctx: Context<UpdateGlobal>,
+        args: InitializeGlobalArgs
+    ) -> Result<()> {
+        update_global::handler(ctx, args)
     }
 
     /// ## Unimplemented!
