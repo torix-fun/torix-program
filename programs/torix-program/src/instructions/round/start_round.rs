@@ -1,3 +1,4 @@
+use std::{ops::Add, time::Duration};
 use anchor_lang::prelude::*;
 
 use crate::{
@@ -41,10 +42,18 @@ pub fn handler(ctx: Context<StartRound>) -> Result<()> {
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
+    let clock = Clock::get()?;
+
+    let end_timestamp: i64 = clock
+        .unix_timestamp
+        .add(ONE_DAY_IN_SECONDS);
+
     accs.round.bump = bumps.round;
     accs.round_vault.bump = bumps.round_vault;
 
     accs.round.vault = accs.round_vault.key();
+
+    accs.round.end_timestamp = end_timestamp;
 
     Ok(())
 }

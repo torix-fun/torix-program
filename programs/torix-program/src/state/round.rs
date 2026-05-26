@@ -6,6 +6,8 @@ use anchor_lang::prelude::*;
 pub struct RoundState {
     pub bump: u8,
 
+    pub end_timestamp: i64,
+
     pub vault: Pubkey
 }
 

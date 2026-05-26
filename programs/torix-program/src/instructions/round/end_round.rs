@@ -40,7 +40,12 @@ pub struct EndRound<'info> {
         bump = global_config.bump
     )]
     pub global_config: Account<'info, GlobalConfig>,
-    
+
+    #[account(
+        address = global_config.fee_recipient
+    )]
+    pub fee_recipient: SystemAccount<'info>,
+
     pub system_program: Program<'info, System>
 }
 
@@ -58,6 +63,13 @@ pub fn handler<'info>(
     // 
     // CURVES[i].creator == WINNERS[i].key() 
     let remaining_accs = ctx.remaining_accounts;
+
+    let clock = Clock::get()?;
+
+    require!(
+        clock.unix_timestamp >= accs.round.end_timestamp,
+        ErrorCode::RoundNotOver
+    );
 
     let winners_per_round = accs.global_config.winners_per_round;
 
@@ -121,6 +133,9 @@ pub fn handler<'info>(
         winner.add_lamports(amount)?;
         accs.round_vault.sub_lamports(amount)?;
     }
+
+    accs.round_vault.close(accs.fee_recipient.to_account_info())?;
+    accs.round.close(accs.fee_recipient.to_account_info())?;
 
     Ok(())
 }

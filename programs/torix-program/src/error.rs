@@ -7,5 +7,8 @@ pub enum ErrorCode {
     SlippageExceeded,
 
     #[msg("Winner account must be writable")]
-    WinnerNotWritable
+    WinnerNotWritable,
+
+    #[msg("Round is not over")]
+    RoundNotOver
 }

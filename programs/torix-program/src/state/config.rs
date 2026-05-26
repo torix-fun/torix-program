@@ -19,5 +19,5 @@ pub struct GlobalConfig {
     /// Only this account is allowed to invoke `start_migration`, `migrate_liquidity` instructions
     pub migration_authority: Pubkey,
     
-    pub fee_wallet: Pubkey
+    pub fee_recipient: Pubkey
 }
