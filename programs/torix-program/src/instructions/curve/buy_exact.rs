@@ -24,7 +24,6 @@ pub struct BuyExact<'info> {
         mut,
         seeds = [
             CURVE_SEED.as_bytes(),
-            curve.creator.as_ref(),
             curve.mint.as_ref()
         ],
         bump = curve.bump
@@ -215,7 +214,6 @@ pub fn handler(
 
     let curve_seeds = &[
         CURVE_SEED.as_bytes(),
-        accs.curve.creator.as_ref(),
         accs.curve.mint.as_ref(),
         &[accs.curve.bump],
     ];

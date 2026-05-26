@@ -120,9 +120,9 @@ export function deriveRoundVault(round: PublicKey): PublicKey {
   )[0];
 }
 
-export function deriveCurve(creator: PublicKey, mint: PublicKey): [PublicKey, number] {
+export function deriveCurve(mint: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from(CURVE_SEED), creator.toBuffer(), mint.toBuffer()],
+    [Buffer.from(CURVE_SEED), mint.toBuffer()],
     PROGRAM_ID
   );
 }
@@ -221,7 +221,7 @@ export async function launchCurve(
 ): Promise<void> {
   const round = deriveRound();
   const globalConfig = deriveGlobalConfig();
-  const [curve] = deriveCurve(creator.publicKey, mint.publicKey);
+  const [curve] = deriveCurve(mint.publicKey);
   const [mintAuthority] = deriveMintAuthority();
   const curveTokenAccount = deriveCurveAta(curve, mint.publicKey);
 
@@ -433,6 +433,6 @@ export async function getFixtureWithCurve(): Promise<FixtureAccounts & { mint: K
   const fix = await getFixture();
   const mint = Keypair.generate();
   await launchCurve(fix.program, fix.creator, mint);
-  const [curve] = deriveCurve(fix.creator.publicKey, mint.publicKey);
+  const [curve] = deriveCurve(mint.publicKey);
   return { ...fix, mint, curve };
 }

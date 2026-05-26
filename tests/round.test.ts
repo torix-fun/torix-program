@@ -78,7 +78,7 @@ describe("round", () => {
     async function createCurveWithVaultFunds() {
       const mint = Keypair.generate();
       await launchCurve(fix.program, fix.creator, mint);
-      const [curve] = deriveCurve(fix.creator.publicKey, mint.publicKey);
+      const [curve] = deriveCurve(mint.publicKey);
 
       const solIn = new anchor.BN(1_000_000_000);
       const totalFee = solIn.muln(DEFAULT_FEE_BPS).divn(10000);

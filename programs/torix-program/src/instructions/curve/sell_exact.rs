@@ -21,7 +21,6 @@ pub struct SellExact<'info> {
         mut,
         seeds = [
             CURVE_SEED.as_bytes(),
-            curve.creator.as_ref(),
             curve.mint.as_ref()
         ],
         bump = curve.bump

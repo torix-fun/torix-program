@@ -31,7 +31,6 @@ pub struct Launch<'info> {
         space = 8 + CurveState::INIT_SPACE,
         seeds = [
             CURVE_SEED.as_bytes(),
-            user.key().as_ref(),
             mint.key().as_ref()
         ],
         bump

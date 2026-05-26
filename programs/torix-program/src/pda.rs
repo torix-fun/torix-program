@@ -21,11 +21,10 @@ pub fn derive_round_vault(round: &Pubkey) -> Pubkey {
     ).0
 }
 
-pub fn derive_curve(creator: &Pubkey, mint: &Pubkey) -> (Pubkey, u8) {
+pub fn derive_curve(mint: &Pubkey) -> (Pubkey, u8) {
     Pubkey::find_program_address(
         &[
             CURVE_SEED.as_ref(),
-            creator.as_ref(),
             mint.as_ref(),
         ],
         &PROGRAM_ID

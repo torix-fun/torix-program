@@ -20,7 +20,7 @@ describe("curve", () => {
   describe("launch", () => {
     it("creates mint, mints total supply, sets CurveState fields correctly", async () => {
       const mint = Keypair.generate();
-      const [curve] = deriveCurve(fix.creator.publicKey, mint.publicKey);
+      const [curve] = deriveCurve(mint.publicKey);
       const curveAta = deriveCurveAta(curve, mint.publicKey);
 
       await launchCurve(fix.program, fix.creator, mint);
@@ -62,7 +62,7 @@ describe("curve", () => {
   describe("buyExact", () => {
     async function setupBuy() {
       const mint = Keypair.generate();
-      const [curve] = deriveCurve(fix.creator.publicKey, mint.publicKey);
+      const [curve] = deriveCurve(mint.publicKey);
       await launchCurve(fix.program, fix.creator, mint);
       await airdropSOL(fix.provider.connection, fix.buyer.publicKey, 100 * LAMPORTS_PER_SOL);
       return { mint, curve };
@@ -216,7 +216,7 @@ describe("curve", () => {
   describe("sellExact", () => {
     async function setupSell() {
       const mint = Keypair.generate();
-      const [curve] = deriveCurve(fix.creator.publicKey, mint.publicKey);
+      const [curve] = deriveCurve(mint.publicKey);
       await launchCurve(fix.program, fix.creator, mint);
       await airdropSOL(fix.provider.connection, fix.buyer.publicKey, 100 * LAMPORTS_PER_SOL);
       await buyExact(fix.program, fix.buyer, curve, mint.publicKey, new anchor.BN(50_000_000), new anchor.BN(0));
