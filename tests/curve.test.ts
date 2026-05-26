@@ -23,7 +23,9 @@ describe("curve", () => {
       const [curve] = deriveCurve(mint.publicKey);
       const curveAta = deriveCurveAta(curve, mint.publicKey);
 
-      await launchCurve(fix.program, fix.creator, mint);
+      const tx = await launchCurve(fix.program, fix.creator, mint);
+
+      console.log("Launch token transaction: ", tx);
 
       const state = deserializeCurveState(
         (await fix.provider.connection.getAccountInfo(curve))!.data
@@ -88,7 +90,9 @@ describe("curve", () => {
       const feeRecipientBefore = await fix.provider.connection.getBalance(fix.feeRecipient.publicKey);
       const vaultBefore = await fix.provider.connection.getBalance(fix.roundVault);
 
-      await buyExact(fix.program, fix.buyer, curve, mint.publicKey, solIn, new anchor.BN(0));
+      const tx = await buyExact(fix.program, fix.buyer, curve, mint.publicKey, solIn, new anchor.BN(0));
+
+      console.log("Buy exact transaction: ", tx);
 
       const userTokenAfter = await fix.provider.connection.getTokenAccountBalance(
         deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
@@ -249,7 +253,9 @@ describe("curve", () => {
       const netSolOut = grossSolOut.sub(totalFee);
       const minSolOut = netSolOut.sub(netSolOut.divn(100));
 
-      await sellExact(fix.program, fix.buyer, curve, mint.publicKey, tokensIn, minSolOut);
+      const tx = await sellExact(fix.program, fix.buyer, curve, mint.publicKey, tokensIn, minSolOut);
+
+      console.log("Sell exact transaction: ", tx);
 
       const userSolAfter = await fix.provider.connection.getBalance(fix.buyer.publicKey);
       expect(userSolAfter - userSolBefore).to.equal(netSolOut.toNumber());

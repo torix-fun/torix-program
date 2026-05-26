@@ -5,7 +5,7 @@ use {
     solana_signer::Signer,
     solana_keypair::Keypair,
     solana_transaction::versioned::VersionedTransaction,
-    torix_program::pda::*
+    torix_rust_sdk::pda::*
 };
 
 

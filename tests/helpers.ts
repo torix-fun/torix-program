@@ -218,14 +218,14 @@ export async function launchCurve(
   program: Program,
   creator: Keypair,
   mint: Keypair,
-): Promise<void> {
+): Promise<string> {
   const round = deriveRound();
   const globalConfig = deriveGlobalConfig();
   const [curve] = deriveCurve(mint.publicKey);
   const [mintAuthority] = deriveMintAuthority();
   const curveTokenAccount = deriveCurveAta(curve, mint.publicKey);
 
-  await program.methods
+  return await program.methods
     .launch()
     .accounts({
       user: creator.publicKey,
@@ -247,7 +247,7 @@ export async function buyExact(
   mint: PublicKey,
   solIn: BN,
   minTokensOut: BN,
-): Promise<void> {
+): Promise<string> {
   const provider = program.provider as AnchorProvider;
   const round = deriveRound();
   const roundVault = deriveRoundVault(round);
@@ -264,7 +264,7 @@ export async function buyExact(
     (await provider.connection.getAccountInfo(globalConfig))!.data
   );
 
-  await program.methods
+  return await program.methods
     .buyExact(solIn, minTokensOut)
     .accounts({
       user: buyer.publicKey,
@@ -288,7 +288,7 @@ export async function sellExact(
   mint: PublicKey,
   tokensIn: BN,
   minSolOut: BN,
-): Promise<void> {
+): Promise<string> {
   const provider = program.provider as AnchorProvider;
   const round = deriveRound();
   const roundVault = deriveRoundVault(round);
@@ -305,7 +305,7 @@ export async function sellExact(
     (await provider.connection.getAccountInfo(globalConfig))!.data
   );
 
-  await program.methods
+  return await program.methods
     .sellExact(tokensIn, minSolOut)
     .accounts({
       user: seller.publicKey,

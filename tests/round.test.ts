@@ -17,6 +17,7 @@ describe("round", () => {
 
   before(async () => {
     fix = await getFixture();
+    console.log("Round vault: ", fix.roundVault.toBase58());
   });
 
   async function ensureRound(durationSeconds: number = ONE_DAY_IN_SECONDS) {

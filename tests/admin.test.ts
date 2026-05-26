@@ -12,6 +12,7 @@ describe("admin", () => {
 
   before(async () => {
     fix = await getFixture();
+    console.log("Fee recipient: ", fix.feeRecipient.publicKey.toBase58());
   });
 
   describe("initializeGlobal", () => {
