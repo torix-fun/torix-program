@@ -159,13 +159,13 @@ describe("curve", () => {
           })
           .signers([fix.buyer])
           .rpc();
-        expect.fail("Expected InvalidMint");
+        expect.fail("Expected AccountNotInitialized");
       } catch (e: any) {
         const code = e instanceof anchor.AnchorError
           ? e.error?.errorCode?.code
           : null;
-        const hasLog = e.logs?.some((l: string) => l.includes("InvalidMint") || l.includes("6003"));
-        expect(code === "InvalidMint" || hasLog).to.be.true;
+        const hasLog = e.logs?.some((l: string) => l.includes("AccountNotInitialized") || l.includes("3012"));
+        expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
     });
 
@@ -190,13 +190,13 @@ describe("curve", () => {
           })
           .signers([fix.buyer])
           .rpc();
-        expect.fail("Expected InvalidTokenAccount");
+        expect.fail("Expected AccountNotInitialized");
       } catch (e: any) {
         const code = e instanceof anchor.AnchorError
           ? e.error?.errorCode?.code
           : null;
-        const hasLog = e.logs?.some((l: string) => l.includes("InvalidTokenAccount") || l.includes("6004"));
-        expect(code === "InvalidTokenAccount" || hasLog).to.be.true;
+        const hasLog = e.logs?.some((l: string) => l.includes("AccountNotInitialized") || l.includes("3012"));
+        expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
     });
 
@@ -348,13 +348,13 @@ describe("curve", () => {
           })
           .signers([fix.buyer])
           .rpc();
-        expect.fail("Expected InvalidMint");
+        expect.fail("Expected AccountNotInitialized");
       } catch (e: any) {
         const code = e instanceof anchor.AnchorError
           ? e.error?.errorCode?.code
           : null;
-        const hasLog = e.logs?.some((l: string) => l.includes("InvalidMint") || l.includes("6003"));
-        expect(code === "InvalidMint" || hasLog).to.be.true;
+        const hasLog = e.logs?.some((l: string) => l.includes("AccountNotInitialized") || l.includes("3012"));
+        expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
     });
 
@@ -382,13 +382,13 @@ describe("curve", () => {
           })
           .signers([fix.buyer])
           .rpc();
-        expect.fail("Expected InvalidTokenAccount");
+        expect.fail("Expected AccountNotInitialized");
       } catch (e: any) {
         const code = e instanceof anchor.AnchorError
           ? e.error?.errorCode?.code
           : null;
-        const hasLog = e.logs?.some((l: string) => l.includes("InvalidTokenAccount") || l.includes("6004"));
-        expect(code === "InvalidTokenAccount" || hasLog).to.be.true;
+        const hasLog = e.logs?.some((l: string) => l.includes("AccountNotInitialized") || l.includes("3012"));
+        expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
     });
   });

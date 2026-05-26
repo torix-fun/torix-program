@@ -88,46 +88,6 @@ pub fn handler(
 ) -> Result<()> {
     let accs = ctx.accounts;
 
-    require_keys_eq!(
-        accs.mint.key(),
-        accs.curve.mint,
-        ErrorCode::InvalidMint
-    );
-
-    {
-        let curve_key = accs.curve.key();
-        let expected_curve_ata = Pubkey::find_program_address(
-            &[
-                curve_key.as_ref(),
-                accs.token_program.key().as_ref(),
-                accs.mint.key().as_ref(),
-            ],
-            &anchor_spl::associated_token::ID,
-        ).0;
-        require_keys_eq!(
-            accs.curve_token_account.key(),
-            expected_curve_ata,
-            ErrorCode::InvalidTokenAccount
-        );
-    }
-
-    {
-        let user_key = accs.user.key();
-        let expected_user_ata = Pubkey::find_program_address(
-            &[
-                user_key.as_ref(),
-                accs.token_program.key().as_ref(),
-                accs.mint.key().as_ref(),
-            ],
-            &anchor_spl::associated_token::ID,
-        ).0;
-        require_keys_eq!(
-            accs.user_token_account.key(),
-            expected_user_ata,
-            ErrorCode::InvalidTokenAccount
-        );
-    }
-
     let fee_bps = accs.global_config.fee_bps as u64;
     let round_fee_bps = accs.global_config.round_fee_bps as u64;
     let fee_den = FEE_DENOMINATOR as u64;

@@ -12,9 +12,5 @@ pub enum ErrorCode {
     #[msg("Round is not over")]
     RoundNotOver,
 
-    #[msg("Invalid mint for this curve")]
-    InvalidMint,
 
-    #[msg("Invalid token account")]
-    InvalidTokenAccount
 }
