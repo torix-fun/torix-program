@@ -6,7 +6,7 @@ import {
   deriveCurve,
   deserializeRoundState, deserializeRoundVault,
   launchCurve, buyExact, endRound, airdropSOL,
-  ONE_DAY_IN_SECONDS, DEFAULT_FEE_BPS,
+  ONE_DAY_IN_SECONDS, DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS,
   INITIAL_VIRTUAL_SOL_RESERVES, INITIAL_VIRTUAL_TOKEN_RESERVES,
 } from "./helpers";
 
@@ -22,11 +22,27 @@ describe("round", () => {
 
   async function ensureRound(durationSeconds: number = ONE_DAY_IN_SECONDS) {
     await fix.program.methods
-      .startRound(new anchor.BN(durationSeconds))
+      .updateGlobal({
+        protocolAuthority: fix.authority.publicKey,
+        endRoundAuthority: fix.endRoundAuthority.publicKey,
+        migrationAuthority: fix.migrationAuthority.publicKey,
+        winnersPerRound: 1,
+        feeBps: DEFAULT_FEE_BPS,
+        roundFeeBps: DEFAULT_ROUND_FEE_BPS,
+        roundDurationSeconds: durationSeconds,
+        feeRecipient: fix.feeRecipient.publicKey,
+      })
+      .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
+      .signers([fix.authority])
+      .rpc();
+
+    await fix.program.methods
+      .startRound()
       .accounts({
         user: fix.authority.publicKey,
         round: fix.round,
         roundVault: fix.roundVault,
+        globalConfig: fix.globalConfig,
       })
       .signers([fix.authority])
       .rpc();
@@ -58,11 +74,12 @@ describe("round", () => {
       await new Promise(r => setTimeout(r, 2000));
 
       await fix.program.methods
-        .startRound(new anchor.BN(ONE_DAY_IN_SECONDS))
+        .startRound()
         .accounts({
           user: fix.authority.publicKey,
           round: fix.round,
           roundVault: fix.roundVault,
+          globalConfig: fix.globalConfig,
         })
         .signers([fix.authority])
         .rpc();
