@@ -26,9 +26,16 @@ export const CURVE_SEED = "curve";
 export const GLOBAL_CONFIG_SEED = "global_config";
 export const MINT_AUTHORITY_SEED = "mint_authority";
 
-export const TOTAL_SUPPLY = new BN("1000000000000000");
-export const INITIAL_VIRTUAL_SOL_RESERVES = new BN("20000000000");
-export const INITIAL_VIRTUAL_TOKEN_RESERVES = new BN("1073000000000");
+<<<<<<< HEAD
+export const TOTAL_SUPPLY = new BN("50000000000000");
+export const INITIAL_VIRTUAL_SOL_RESERVES = new BN("4000000000");
+export const INITIAL_VIRTUAL_TOKEN_RESERVES = new BN("35000000000000");
+=======
+// export const TOTAL_SUPPLY = new BN("500000000000000");
+export const TOTAL_SUPPLY = new BN("50000000000000");
+export const INITIAL_VIRTUAL_SOL_RESERVES = new BN("2000000000");
+export const INITIAL_VIRTUAL_TOKEN_RESERVES = new BN("32555055055050");
+>>>>>>> eafbd54 (feat: reduce initial MCAP to 50M & adjust price behavior)
 export const TOKEN_DECIMALS = 6;
 
 export const DEFAULT_FEE_BPS = 300;
@@ -437,4 +444,68 @@ export async function getFixtureWithCurve(): Promise<FixtureAccounts & { mint: K
   await launchCurve(fix.program, fix.creator, mint);
   const [curve] = deriveCurve(mint.publicKey);
   return { ...fix, mint, curve };
+}
+
+export function calculateTokenPriceSol(
+  curveState: any,
+  solDecimalsNum = 9,
+  tokenDecimalsNum = TOKEN_DECIMALS,
+  precision = 12,
+): string {
+  const virtualSol = new BN(curveState.virtual_reserves_sol);
+  const virtualTokens = new BN(curveState.virtual_reserves_tokens);
+
+  const scale = new BN(10).pow(new BN(precision));
+
+  const tokenDecimalsFactor = new BN(10).pow(new BN(tokenDecimalsNum));
+  const solDecimalsFactor = new BN(10).pow(new BN(solDecimalsNum));
+
+  const priceScaled = virtualSol
+    .mul(tokenDecimalsFactor)
+    .mul(scale)
+    .div(
+      virtualTokens.mul(solDecimalsFactor)
+    );
+
+  const integer = priceScaled.div(scale).toString();
+
+  const fraction = priceScaled
+    .mod(scale)
+    .toString()
+    .padStart(precision, "0");
+
+  return `${integer}.${fraction}`;
+}
+
+export function calculateMarketCapSolPrecise(
+  curveState: any,
+  totalSupplyUi: BN = TOTAL_SUPPLY.div(
+    new BN(10).pow(new BN(TOKEN_DECIMALS))
+  ),
+  precision = 12,
+): string {
+  const virtualSol = new BN(curveState.virtual_reserves_sol);
+  const virtualTokens = new BN(curveState.virtual_reserves_tokens);
+
+  const scale = new BN(10).pow(new BN(precision));
+
+  const solDecimalsFactor = new BN(10).pow(new BN(9));
+  const tokenDecimalsFactor = new BN(10).pow(new BN(TOKEN_DECIMALS));
+
+  const mcapScaled = virtualSol
+    .mul(tokenDecimalsFactor)
+    .mul(scale)
+    .mul(totalSupplyUi)
+    .div(
+      virtualTokens.mul(solDecimalsFactor)
+    );
+
+  const integer = mcapScaled.div(scale).toString();
+
+  const fraction = mcapScaled
+    .mod(scale)
+    .toString()
+    .padStart(precision, "0");
+
+  return `${integer}.${fraction}`;
 }

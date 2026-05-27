@@ -8,6 +8,8 @@ import {
   launchCurve, buyExact, sellExact, airdropSOL,
   TOTAL_SUPPLY, INITIAL_VIRTUAL_SOL_RESERVES, INITIAL_VIRTUAL_TOKEN_RESERVES,
   DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS,
+  calculateTokenPriceSol,
+  calculateMarketCapSolPrecise,
 } from "./helpers";
 
 describe("curve", () => {
@@ -44,7 +46,7 @@ describe("curve", () => {
       expect(state.stats.sell_transactions.toNumber()).to.equal(0);
 
       const tokenBalance = await fix.provider.connection.getTokenAccountBalance(curveAta, "confirmed");
-      expect(tokenBalance.value.uiAmountString).to.equal("1000000000");
+      expect(tokenBalance.value.uiAmountString).to.equal("50000000");
     });
 
     it("rejects duplicate launch (same creator + mint)", async () => {
@@ -86,6 +88,9 @@ describe("curve", () => {
       const curveStateBefore = deserializeCurveState(
         (await fix.provider.connection.getAccountInfo(curve))!.data
       );
+
+      console.log("Token price before buy: ", calculateTokenPriceSol(curveStateBefore));
+
       const userSolBefore = await fix.provider.connection.getBalance(fix.buyer.publicKey);
       const feeRecipientBefore = await fix.provider.connection.getBalance(fix.feeRecipient.publicKey);
       const vaultBefore = await fix.provider.connection.getBalance(fix.roundVault);
@@ -105,6 +110,9 @@ describe("curve", () => {
       const curveStateAfter = deserializeCurveState(
         (await fix.provider.connection.getAccountInfo(curve))!.data
       );
+
+      console.log("Token price after buy: ", calculateTokenPriceSol(curveStateAfter));
+
       expect(curveStateAfter.virtual_reserves_sol.toString()).to.equal(newVSol.toString());
       expect(curveStateAfter.virtual_reserves_tokens.toString()).to.equal(newVTok.toString());
       expect(curveStateAfter.stats.volume_sol.toString()).to.equal(solIn.toString());
@@ -236,6 +244,9 @@ describe("curve", () => {
       const curveStateBefore = deserializeCurveState(
         (await fix.provider.connection.getAccountInfo(curve))!.data
       );
+
+      console.log("Token price before sell: ", calculateTokenPriceSol(curveStateBefore));
+
       const userTokenBefore = await fix.provider.connection.getTokenAccountBalance(
         deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
       );
@@ -272,6 +283,9 @@ describe("curve", () => {
       const curveStateAfter = deserializeCurveState(
         (await fix.provider.connection.getAccountInfo(curve))!.data
       );
+
+      console.log("Token price after sell: ", calculateTokenPriceSol(curveStateAfter));
+
       expect(curveStateAfter.virtual_reserves_sol.toString()).to.equal(newVSol.toString());
       expect(curveStateAfter.virtual_reserves_tokens.toString()).to.equal(newVTok.toString());
       expect(curveStateAfter.stats.sell_transactions.toNumber()).to.equal(
@@ -393,6 +407,155 @@ describe("curve", () => {
         const hasLog = e.logs?.some((l: string) => l.includes("AccountNotInitialized") || l.includes("3012"));
         expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
+    });
+  });
+
+  describe("price", () => {
+    async function setupBuy() {
+      const mint = Keypair.generate();
+      const [curve] = deriveCurve(mint.publicKey);
+      await launchCurve(fix.program, fix.creator, mint);
+      await airdropSOL(fix.provider.connection, fix.buyer.publicKey, 100 * LAMPORTS_PER_SOL);
+      return { mint, curve };
+    }
+
+    it("test price and MCAP in sol", async () => {
+      const { mint, curve } = await setupBuy();
+
+      const solInFirstBuy = new anchor.BN(50_000_000);  // 0.05 SOL
+      const solInSecondBuy = new anchor.BN(150_000_000);  // 0.15 SOL
+      const solInThirdBuy = new anchor.BN(LAMPORTS_PER_SOL);  // 1 SOL
+      const solInFourthBuy = new anchor.BN(LAMPORTS_PER_SOL * 10);  // 10 SOL
+
+      const curveStateBefore = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      const priceBefore = parseFloat(calculateTokenPriceSol(curveStateBefore));
+      const mcapBefore = parseFloat(calculateMarketCapSolPrecise(curveStateBefore));
+
+      console.log("Token sol price before buy transactions: ", calculateTokenPriceSol(curveStateBefore));
+      console.log("Token sol MCAP before  buy transactions: ", calculateMarketCapSolPrecise(curveStateBefore));
+
+      // 1st
+      await buyExact(
+        fix.program, 
+        fix.buyer, 
+        curve, 
+        mint.publicKey, 
+        solInFirstBuy, 
+        new anchor.BN(0)
+      );
+
+      const curveStateAfterFirst = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      const priceAfterFirst = parseFloat(calculateTokenPriceSol(curveStateAfterFirst));
+      const mcapAfterFirst = parseFloat(calculateMarketCapSolPrecise(curveStateAfterFirst));
+
+      expect(priceAfterFirst).to.be.greaterThan(priceBefore);
+      expect(mcapAfterFirst).to.be.greaterThan(mcapBefore);
+
+      console.log(`Token sol price after 1st buy with ${solInFirstBuy} LAMPORTS: `, calculateTokenPriceSol(curveStateAfterFirst));
+      console.log("Token sol MCAP after 1st buy: ", calculateMarketCapSolPrecise(curveStateAfterFirst));
+
+      // 2nd
+      await buyExact(
+        fix.program, 
+        fix.buyer, 
+        curve, 
+        mint.publicKey, 
+        solInSecondBuy, 
+        new anchor.BN(0)
+      );
+
+      const curveStateAfterSecond = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      const priceAfterSecond = parseFloat(calculateTokenPriceSol(curveStateAfterSecond));
+      const mcapAfterSecond = parseFloat(calculateMarketCapSolPrecise(curveStateAfterSecond));
+
+      expect(priceAfterSecond).to.be.greaterThan(priceAfterFirst);
+      expect(mcapAfterSecond).to.be.greaterThan(mcapAfterFirst);
+
+      console.log(`Token sol price after 2nd buy with ${solInSecondBuy} LAMPORTS: `, calculateTokenPriceSol(curveStateAfterSecond));
+      console.log("Token sol MCAP after 2nd buy: ", calculateMarketCapSolPrecise(curveStateAfterSecond));
+
+      // 3rd
+      await buyExact(
+        fix.program, 
+        fix.buyer, 
+        curve, 
+        mint.publicKey, 
+        solInThirdBuy, 
+        new anchor.BN(0)
+      );
+
+      const curveStateAfterThird = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      const priceAfterThird = parseFloat(calculateTokenPriceSol(curveStateAfterThird));
+      const mcapAfterThird = parseFloat(calculateMarketCapSolPrecise(curveStateAfterThird));
+
+      expect(priceAfterThird).to.be.greaterThan(priceAfterSecond);
+      expect(mcapAfterThird).to.be.greaterThan(mcapAfterSecond);
+
+      console.log(`Token sol price after 3rd buy with ${solInThirdBuy} LAMPORTS: `, calculateTokenPriceSol(curveStateAfterThird));
+      console.log("Token sol MCAP after 3rd buy: ", calculateMarketCapSolPrecise(curveStateAfterThird));
+
+      const userTokensBefore = await fix.provider.connection.getTokenAccountBalance(
+        deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
+      );
+
+      // 4th
+      await buyExact(
+        fix.program, 
+        fix.buyer, 
+        curve, 
+        mint.publicKey, 
+        solInFourthBuy, 
+        new anchor.BN(0)
+      );
+
+      const userTokenAfter = await fix.provider.connection.getTokenAccountBalance(
+        deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
+      );
+
+      const tokensFromFourthBuy = new anchor.BN(userTokenAfter.value.amount)
+        .sub(new anchor.BN(userTokensBefore.value.amount));
+
+      const curveStateAfterFourth = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      const priceAfterFourth = parseFloat(calculateTokenPriceSol(curveStateAfterFourth));
+      const mcapAfterFourth = parseFloat(calculateMarketCapSolPrecise(curveStateAfterFourth));
+
+      expect(priceAfterFourth).to.be.greaterThan(priceAfterThird);
+      expect(mcapAfterFourth).to.be.greaterThan(mcapAfterThird);
+
+      console.log(`Token sol price after 4th buy with ${solInFourthBuy} LAMPORTS: `, calculateTokenPriceSol(curveStateAfterFourth));
+      console.log("Token sol MCAP after 4th buy: ", calculateMarketCapSolPrecise(curveStateAfterFourth));
+    
+      // 1st sell
+      await sellExact(
+        fix.program,
+        fix.buyer,
+        curve,
+        mint.publicKey,
+        tokensFromFourthBuy,
+        new anchor.BN(0)
+      );
+
+      const curveStateAfterSell = deserializeCurveState(
+        (await fix.provider.connection.getAccountInfo(curve))!.data
+      );
+
+      console.log(`Token sol price after 1st sell with ${tokensFromFourthBuy} TOKENS: `, calculateTokenPriceSol(curveStateAfterSell));
+      console.log("Token sol MCAP after 1st sell: ", calculateMarketCapSolPrecise(curveStateAfterSell));
     });
   });
 });

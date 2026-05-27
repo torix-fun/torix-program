@@ -30,10 +30,13 @@ pub mod time {
 }
 
 pub mod curve {
-    pub const TOTAL_SUPPLY: u64 = 1_000_000_000_000_000;
+    pub const TOTAL_SUPPLY: u64 = 50_000_000_000_000;
     pub const TOKEN_DECIMALS: u8 = 6;
-    pub const INITIAL_VIRTUAL_SOL_RESERVES: u64 = 20_000_000_000;
-    pub const INITIAL_VIRTUAL_TOKEN_RESERVES: u64 = 1_073_000_000_000;
+    pub const INITIAL_VIRTUAL_SOL_RESERVES: u64 = 4_000_000_000;   // 4 sol
+    pub const INITIAL_VIRTUAL_TOKEN_RESERVES: u64 = 35_000_000_000_000;
+
+    // not implemented yet
+    // pub const MIGRATION_THRESHOLD_SOL: u64 = 17_000_000_000;  // 17 sol (15-20 range is the best for current setup)
 }
 
 pub mod math {
