@@ -190,6 +190,7 @@ export async function initializeGlobal(
     winnersPerRound: number;
     feeBps: number;
     roundFeeBps: number;
+    roundDurationSeconds: number;
     feeRecipient: PublicKey;
   }
 ): Promise<void> {
@@ -203,13 +204,13 @@ export async function initializeGlobal(
 export async function startRound(
   program: Program,
   user: Keypair,
-  durationSeconds: number = ONE_DAY_IN_SECONDS,
 ): Promise<void> {
   const round = deriveRound();
   const roundVault = deriveRoundVault(round);
+  const globalConfig = deriveGlobalConfig();
   await program.methods
-    .startRound(new anchor.BN(durationSeconds))
-    .accounts({ user: user.publicKey, round, roundVault })
+    .startRound()
+    .accounts({ user: user.publicKey, round, roundVault, globalConfig })
     .signers([user])
     .rpc();
 }
@@ -415,6 +416,7 @@ export async function getFixture(): Promise<FixtureAccounts> {
     winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
     feeBps: DEFAULT_FEE_BPS,
     roundFeeBps: DEFAULT_ROUND_FEE_BPS,
+    roundDurationSeconds: ONE_DAY_IN_SECONDS,
     feeRecipient: feeRecipient.publicKey,
   });
 
