@@ -7,13 +7,14 @@ use anchor_spl::token_interface::{
     Mint,
     TokenAccount,
     Token2022,
-    TransferChecked
+    TransferChecked,
 };
 
 use crate::{
     state::*,
     constants::*,
     error::ErrorCode,
+    math::*,
 };
 
 
@@ -78,47 +79,41 @@ pub struct BuyExact<'info> {
     pub user_token_account: InterfaceAccount<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token2022>,
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(
     ctx: Context<BuyExact>,
     sol_in: u64,
-    min_tokens_out: u64
+    min_tokens_out: u64,
 ) -> Result<()> {
     let accs = ctx.accounts;
 
-    let fee_bps = accs.global_config.fee_bps as u64;
-    let round_fee_bps = accs.global_config.round_fee_bps as u64;
-    let fee_den = FEE_DENOMINATOR as u64;
-
-    let total_fee = sol_in
-        .checked_mul(fee_bps)
-        .ok_or(ProgramError::ArithmeticOverflow)?
-        .checked_div(fee_den)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let round_fee = sol_in
-        .checked_mul(round_fee_bps)
-        .ok_or(ProgramError::ArithmeticOverflow)?
-        .checked_div(fee_den)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let protocol_fee = total_fee
-        .checked_sub(round_fee)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
+    let fee_split = calculate_fee_split(
+        sol_in,
+        accs.global_config.fee_bps,
+        accs.global_config.round_fee_bps,
+    )?;
 
     let net_sol = sol_in
-        .checked_sub(total_fee)
+        .checked_sub(fee_split.total_fee)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
-    let curve_key = accs.curve.key();
+    let curve_result = calculate_buy_amount_out(
+        accs.curve.virtual_reserves_sol,
+        accs.curve.virtual_reserves_tokens,
+        net_sol,
+    )?;
 
-    // Transfer net_sol from user to curve
+    require!(
+        curve_result.tokens_out >= min_tokens_out,
+        ErrorCode::SlippageExceeded
+    );
+
     solana_program::program::invoke(
         &solana_program::system_instruction::transfer(
             &accs.user.key(),
-            &curve_key,
+            &accs.curve.key(),
             net_sol,
         ),
         &[
@@ -128,13 +123,12 @@ pub fn handler(
         ],
     )?;
 
-    // Transfer protocol_fee from user to fee_recipient
-    if protocol_fee > 0 {
+    if fee_split.protocol_fee > 0 {
         solana_program::program::invoke(
             &solana_program::system_instruction::transfer(
                 &accs.user.key(),
                 &accs.fee_recipient.key(),
-                protocol_fee,
+                fee_split.protocol_fee,
             ),
             &[
                 accs.user.to_account_info(),
@@ -144,13 +138,12 @@ pub fn handler(
         )?;
     }
 
-    // Transfer round_fee from user to round_vault
-    if round_fee > 0 {
+    if fee_split.round_fee > 0 {
         solana_program::program::invoke(
             &solana_program::system_instruction::transfer(
                 &accs.user.key(),
                 &accs.round_vault.key(),
-                round_fee,
+                fee_split.round_fee,
             ),
             &[
                 accs.user.to_account_info(),
@@ -159,27 +152,6 @@ pub fn handler(
             ],
         )?;
     }
-
-    let k = (accs.curve.virtual_reserves_sol as u128)
-        .checked_mul(accs.curve.virtual_reserves_tokens as u128)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let new_virtual_sol = (accs.curve.virtual_reserves_sol as u128)
-        .checked_add(net_sol as u128)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let new_virtual_tokens = k
-        .checked_div(new_virtual_sol)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let tokens_out = accs.curve.virtual_reserves_tokens
-        .checked_sub(new_virtual_tokens as u64)
-        .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    require!(
-        tokens_out >= min_tokens_out,
-        ErrorCode::SlippageExceeded
-    );
 
     let curve_seeds = &[
         CURVE_SEED.as_bytes(),
@@ -199,20 +171,20 @@ pub fn handler(
             },
             signer_seeds,
         ),
-        tokens_out,
+        curve_result.tokens_out,
         TOKEN_DECIMALS,
     )?;
 
     let curve = &mut accs.curve;
-    curve.virtual_reserves_sol = new_virtual_sol as u64;
-    curve.virtual_reserves_tokens = new_virtual_tokens as u64;
+    curve.virtual_reserves_sol = curve_result.new_virtual_sol;
+    curve.virtual_reserves_tokens = curve_result.new_virtual_tokens;
     curve.real_reserves_sol = curve
         .real_reserves_sol
         .checked_add(net_sol)
         .ok_or(ProgramError::ArithmeticOverflow)?;
     curve.real_reserves_tokens = curve
         .real_reserves_tokens
-        .checked_sub(tokens_out)
+        .checked_sub(curve_result.tokens_out)
         .ok_or(ProgramError::ArithmeticOverflow)?;
     curve.stats.volume_sol = curve
         .stats

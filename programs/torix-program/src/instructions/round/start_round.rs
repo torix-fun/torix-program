@@ -1,9 +1,9 @@
-use std::ops::Add;
 use anchor_lang::prelude::*;
 
 use crate::{
     state::*,
-    constants::*
+    constants::*,
+    error::ErrorCode,
 };
 
 
@@ -35,24 +35,28 @@ pub struct StartRound<'info> {
     )]
     pub round_vault: Account<'info, RoundVault>,
 
-    pub system_program: Program<'info, System>
+    pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
+    require!(
+        duration_seconds > 0,
+        ErrorCode::InvalidDuration
+    );
+
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
     let clock = Clock::get()?;
 
-    let end_timestamp: i64 = clock
+    let end_timestamp = clock
         .unix_timestamp
-        .add(duration_seconds);
+        .checked_add(duration_seconds)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
 
     accs.round.bump = bumps.round;
     accs.round_vault.bump = bumps.round_vault;
-
     accs.round.vault = accs.round_vault.key();
-
     accs.round.end_timestamp = end_timestamp;
 
     Ok(())
