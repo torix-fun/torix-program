@@ -200,20 +200,23 @@ describe("curve", () => {
       }
     });
 
-    it("handles zero SOL input", async () => {
+    it("rejects zero SOL input (InsufficientOutputAmount)", async () => {
       const { mint, curve } = await setupBuy();
 
-      const curveStateBefore = deserializeCurveState(
-        (await fix.provider.connection.getAccountInfo(curve))!.data
-      );
-
-      await buyExact(fix.program, fix.buyer, curve, mint.publicKey, new anchor.BN(0), new anchor.BN(0));
-
-      const curveStateAfter = deserializeCurveState(
-        (await fix.provider.connection.getAccountInfo(curve))!.data
-      );
-      expect(curveStateAfter.virtual_reserves_sol.toString()).to.equal(curveStateBefore.virtual_reserves_sol.toString());
-      expect(curveStateAfter.virtual_reserves_tokens.toString()).to.equal(curveStateBefore.virtual_reserves_tokens.toString());
+      try {
+        await buyExact(
+          fix.program, fix.buyer, curve, mint.publicKey,
+          new anchor.BN(0),
+          new anchor.BN(0),
+        );
+        expect.fail("Expected InsufficientOutputAmount");
+      } catch (e: any) {
+        const code = e instanceof anchor.AnchorError
+          ? e.error?.errorCode?.code
+          : null;
+        const hasLog = e.logs?.some((l: string) => l.includes("InsufficientOutputAmount") || l.includes("6003"));
+        expect(code === "InsufficientOutputAmount" || hasLog).to.be.true;
+      }
     });
   });
 
