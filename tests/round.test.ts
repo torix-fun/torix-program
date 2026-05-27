@@ -29,7 +29,7 @@ describe("round", () => {
         winnersPerRound: 1,
         feeBps: DEFAULT_FEE_BPS,
         roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-        roundDurationSeconds: durationSeconds,
+        roundDurationSeconds: new anchor.BN(durationSeconds),
         feeRecipient: fix.feeRecipient.publicKey,
       })
       .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })

@@ -190,7 +190,7 @@ export async function initializeGlobal(
     winnersPerRound: number;
     feeBps: number;
     roundFeeBps: number;
-    roundDurationSeconds: number;
+    roundDurationSeconds: anchor.BN;
     feeRecipient: PublicKey;
   }
 ): Promise<void> {
@@ -416,7 +416,7 @@ export async function getFixture(): Promise<FixtureAccounts> {
     winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
     feeBps: DEFAULT_FEE_BPS,
     roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-    roundDurationSeconds: ONE_DAY_IN_SECONDS,
+    roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
     feeRecipient: feeRecipient.publicKey,
   });
 

@@ -41,7 +41,7 @@ describe("admin", () => {
           winnersPerRound: 1,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: Keypair.generate().publicKey,
         });
         expect.fail("Expected re-initialization to fail");
@@ -60,7 +60,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: 15000,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -81,7 +81,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -98,7 +98,7 @@ describe("admin", () => {
           winnersPerRound: 0,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -119,7 +119,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -142,7 +142,7 @@ describe("admin", () => {
           winnersPerRound: 5,
           feeBps: 500,
           roundFeeBps: 200,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: newFeeRecipient,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -169,7 +169,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: ONE_DAY_IN_SECONDS,
+          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -190,7 +190,7 @@ describe("admin", () => {
             winnersPerRound: 1,
             feeBps: DEFAULT_FEE_BPS,
             roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-            roundDurationSeconds: ONE_DAY_IN_SECONDS,
+            roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
             feeRecipient: Keypair.generate().publicKey,
           })
           .accounts({ user: impostor.publicKey, globalConfig: fix.globalConfig })
