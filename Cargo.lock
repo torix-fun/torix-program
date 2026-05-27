@@ -4260,7 +4260,7 @@ dependencies = [
 [[package]]
 name = "torix-rust-sdk"
 version = "0.1.0"
-source = "git+https://github.com/torix-fun/torix-rust-sdk#edebb0a6cf1e6ae7aa875bba9029aa7b51f22c0d"
+source = "git+https://github.com/torix-fun/torix-rust-sdk#ab37687dfdba84ca1b4ba4e7acc016b2e4279c23"
 dependencies = [
  "solana-pubkey 4.2.0",
  "spl-associated-token-account-interface",

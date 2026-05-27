@@ -21,8 +21,8 @@ pub mod torix_program {
         launch::handler(ctx)
     }
 
-    pub fn start_round(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
-        start_round::handler(ctx, duration_seconds)
+    pub fn start_round(ctx: Context<StartRound>) -> Result<()> {
+        start_round::handler(ctx)
     }
 
     pub fn end_round<'info>(ctx: Context<'info, EndRound<'info>>, amounts: Vec<u64>) -> Result<()> {
@@ -40,7 +40,7 @@ pub mod torix_program {
     /// ## Admin init global config instruction
     pub fn initialize_global(
         ctx: Context<InitializeGlobal>,
-        args: InitializeGlobalArgs
+        args: GlobalConfigArgs
     ) -> Result<()> {
         initialize_global::handler(ctx, args)
     }
@@ -48,7 +48,7 @@ pub mod torix_program {
     /// ## Admin update global config instruction
     pub fn update_global(
         ctx: Context<UpdateGlobal>,
-        args: InitializeGlobalArgs
+        args: GlobalConfigArgs
     ) -> Result<()> {
         update_global::handler(ctx, args)
     }

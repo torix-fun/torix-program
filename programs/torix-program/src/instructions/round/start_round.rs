@@ -2,8 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::{
     state::*,
-    constants::*,
-    error::ErrorCode,
+    constants::*
 };
 
 
@@ -35,15 +34,18 @@ pub struct StartRound<'info> {
     )]
     pub round_vault: Account<'info, RoundVault>,
 
+    #[account(
+        seeds = [
+            GLOBAL_CONFIG_SEED.as_bytes()
+        ],
+        bump = global_config.bump
+    )]
+    pub global_config: Account<'info, GlobalConfig>,
+
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
-    require!(
-        duration_seconds > 0,
-        ErrorCode::InvalidDuration
-    );
-
+pub fn handler(ctx: Context<StartRound>) -> Result<()> {
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
@@ -51,7 +53,7 @@ pub fn handler(ctx: Context<StartRound>, duration_seconds: i64) -> Result<()> {
 
     let end_timestamp = clock
         .unix_timestamp
-        .checked_add(duration_seconds)
+        .checked_add(accs.global_config.round_duration_seconds)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
     accs.round.bump = bumps.round;

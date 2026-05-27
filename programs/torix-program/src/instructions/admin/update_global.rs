@@ -4,6 +4,7 @@ use crate::{
     state::*,
     constants::*,
 };
+use super::*;
 
 
 #[derive(Accounts)]
@@ -25,7 +26,7 @@ pub struct UpdateGlobal<'info> {
 
 pub fn handler(
     ctx: Context<UpdateGlobal>,
-    args: super::initialize_global::InitializeGlobalArgs
+    args: GlobalConfigArgs
 ) -> Result<()> {
     let config = &mut ctx.accounts.global_config;
 
@@ -34,14 +35,10 @@ pub fn handler(
         args.round_fee_bps
     );
 
-    config.protocol_authority = args.protocol_authority;
-    config.end_round_authority = args.end_round_authority;
-    config.migration_authority = args.migration_authority;
-
-    config.winners_per_round = args.winners_per_round;
-    config.fee_bps = args.fee_bps;
-    config.round_fee_bps = args.round_fee_bps;
-    config.fee_recipient = args.fee_recipient;
+    configure_global(
+        config, 
+        args
+    );
 
     Ok(())
 }

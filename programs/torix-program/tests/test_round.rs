@@ -21,16 +21,16 @@ fn test_start_round() {
     let user = payer.pubkey();
     let round = derive_round();
     let round_vault = derive_round_vault(&round); 
+    let global_config = derive_global_config();
 
     let instruction = Instruction::new_with_bytes(
         program_id,
-        &torix_program::instruction::StartRound {
-            duration_seconds: 86400,
-        }.data(),
+        &torix_program::instruction::StartRound {}.data(),
         torix_program::accounts::StartRound {
             user,
             round,
             round_vault,
+            global_config,
             system_program: SYSTEM_PROGRAM_ID
         }.to_account_metas(None),
     );

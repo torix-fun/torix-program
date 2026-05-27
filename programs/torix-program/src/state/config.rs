@@ -14,6 +14,8 @@ pub struct GlobalConfig {
 
     pub round_fee_bps: u16,
 
+    pub round_duration_seconds: i64,
+
     pub protocol_authority: Pubkey,
 
     pub end_round_authority: Pubkey,
