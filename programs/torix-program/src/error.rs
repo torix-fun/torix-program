@@ -14,12 +14,6 @@ pub enum ErrorCode {
     #[msg("Insufficient output amount")]
     InsufficientOutputAmount,
 
-    #[msg("Round has already ended")]
-    RoundEnded,
-
     #[msg("Instruction not yet implemented")]
-    NotImplemented,
-
-    #[msg("Invalid duration: must be greater than zero")]
-    InvalidDuration,
+    NotImplemented
 }
