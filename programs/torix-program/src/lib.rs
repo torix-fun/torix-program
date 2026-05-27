@@ -17,8 +17,11 @@ pub mod torix_program {
     use super::*;
 
 
-    pub fn launch(ctx: Context<Launch>) -> Result<()> {
-        launch::handler(ctx)
+    pub fn launch(
+        ctx: Context<Launch>, 
+        args: LaunchArgs
+    ) -> Result<()> {
+        launch::handler(ctx, args)
     }
 
     pub fn start_round(ctx: Context<StartRound>) -> Result<()> {

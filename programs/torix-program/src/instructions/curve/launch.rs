@@ -1,14 +1,26 @@
 use anchor_lang::{
     prelude::*,
-    solana_program,
+    solana_program
 };
 use anchor_spl::token_interface::{
-    self,
-    Token2022,
-    MintTo,
-    SetAuthority,
+    self, 
+    MintTo, 
+    SetAuthority, 
+    Token2022, 
+    TokenMetadataInitialize, 
+    spl_pod::optional_keys::OptionalNonZeroPubkey, 
+    spl_token_2022::{
+        extension::{
+            ExtensionType,
+            metadata_pointer::instruction as metadata_pointer_instruction
+        }, 
+        state::Mint 
+    }, 
+    spl_token_metadata_interface::state::TokenMetadata, 
+    token_metadata_initialize
 };
 use anchor_spl::associated_token::AssociatedToken;
+use spl_type_length_value::variable_len_pack::VariableLenPack;
 
 use crate::{
     state::*,
@@ -71,7 +83,17 @@ pub struct Launch<'info> {
     pub system_program: Program<'info, System>
 }
 
-pub fn handler(ctx: Context<Launch>) -> Result<()> {
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub struct LaunchArgs {
+    pub token_name: String,
+    pub token_symbol: String,
+    pub token_uri: String
+}
+
+pub fn handler(
+    ctx: Context<Launch>,
+    args: LaunchArgs
+) -> Result<()> {
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
@@ -82,16 +104,36 @@ pub fn handler(ctx: Context<Launch>) -> Result<()> {
     ];
     let signer_seeds = &[&signer_seeds[..]];
 
-    let mint_size: usize = 82;
-    let mint_lamports = solana_program::rent::Rent::get()?
-        .minimum_balance(mint_size);
+    let token_metadata = TokenMetadata {
+        update_authority: OptionalNonZeroPubkey::try_from(
+            Some(accs.mint_authority.key())
+        )?,
+        mint: accs.mint.key(),
+        name: args.token_name.clone(),
+        symbol: args.token_symbol.clone(),
+        uri: args.token_uri.clone(),
+        ..Default::default()
+    };
+
+    let extensions = &[
+        ExtensionType::MetadataPointer
+    ];
+
+    let mint_space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
+
+    let metadata_space = 4 + token_metadata.get_packed_len()?;
+
+    let total_space = mint_space + metadata_space;
+
+    let rent_exemption_total = Rent::get()?
+        .minimum_balance(total_space);
 
     solana_program::program::invoke(
         &solana_program::system_instruction::create_account(
             &accs.user.key(),
             &accs.mint.key(),
-            mint_lamports,
-            mint_size as u64,
+            rent_exemption_total,
+            mint_space as u64,
             &accs.token_program.key(),
         ),
         &[
@@ -99,6 +141,18 @@ pub fn handler(ctx: Context<Launch>) -> Result<()> {
             accs.mint.to_account_info(),
             accs.system_program.to_account_info(),
         ],
+    )?;
+
+    solana_program::program::invoke(
+        &metadata_pointer_instruction::initialize(
+            &accs.token_program.key(), 
+            &accs.mint.key(), 
+            Some(accs.mint_authority.key()), 
+            Some(accs.mint.key())
+        )?, 
+        &[
+            accs.mint.to_account_info()
+        ]
     )?;
 
     let cpi_ctx = CpiContext::new_with_signer(
@@ -113,6 +167,25 @@ pub fn handler(ctx: Context<Launch>) -> Result<()> {
         TOKEN_DECIMALS,
         &accs.mint_authority.key(),
         None,
+    )?;
+
+    let cpi_ctx = CpiContext::new_with_signer(
+        accs.token_program.key(),
+        TokenMetadataInitialize {
+            program_id: accs.token_program.to_account_info(),
+            mint: accs.mint.to_account_info(),
+            metadata: accs.mint.to_account_info(),
+            mint_authority: accs.mint_authority.to_account_info(),
+            update_authority: accs.mint_authority.to_account_info()
+        },
+        signer_seeds
+    );
+
+    token_metadata_initialize(
+        cpi_ctx, 
+        args.token_name, 
+        args.token_symbol, 
+        args.token_uri
     )?;
 
     let cpi_ctx = CpiContext::new_with_signer(

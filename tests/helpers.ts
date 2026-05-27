@@ -26,21 +26,18 @@ export const CURVE_SEED = "curve";
 export const GLOBAL_CONFIG_SEED = "global_config";
 export const MINT_AUTHORITY_SEED = "mint_authority";
 
-<<<<<<< HEAD
 export const TOTAL_SUPPLY = new BN("50000000000000");
 export const INITIAL_VIRTUAL_SOL_RESERVES = new BN("4000000000");
 export const INITIAL_VIRTUAL_TOKEN_RESERVES = new BN("35000000000000");
-=======
-// export const TOTAL_SUPPLY = new BN("500000000000000");
-export const TOTAL_SUPPLY = new BN("50000000000000");
-export const INITIAL_VIRTUAL_SOL_RESERVES = new BN("2000000000");
-export const INITIAL_VIRTUAL_TOKEN_RESERVES = new BN("32555055055050");
->>>>>>> eafbd54 (feat: reduce initial MCAP to 50M & adjust price behavior)
 export const TOKEN_DECIMALS = 6;
 
 export const DEFAULT_FEE_BPS = 300;
 export const DEFAULT_ROUND_FEE_BPS = 100;
 export const DEFAULT_WINNERS_PER_ROUND = 1;
+
+export const TOKEN_NAME = "Test";
+export const TOKEN_SYMBOL = "TEST";
+export const TOKEN_URI = "https://ipfs.io/ipfs/bafkreidv4glvv6y2rf4kitg3t4hnzsegcjb5gvgjdtjrzaexsnhpm6slha";
 
 // ─── Anchor.toml helpers ─────────────────────────────────────
 
@@ -233,8 +230,14 @@ export async function launchCurve(
   const [mintAuthority] = deriveMintAuthority();
   const curveTokenAccount = deriveCurveAta(curve, mint.publicKey);
 
+  const args = {
+    tokenName: TOKEN_NAME,
+    tokenSymbol: TOKEN_SYMBOL,
+    tokenUri: TOKEN_URI
+  };
+
   return await program.methods
-    .launch()
+    .launch(args)
     .accounts({
       user: creator.publicKey,
       mint: mint.publicKey,

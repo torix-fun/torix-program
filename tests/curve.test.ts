@@ -3,14 +3,16 @@ import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import {
   getFixture, FixtureAccounts,
-  deriveCurve, deriveCurveAta, deriveUserAta,
+  deriveCurve, deriveCurveAta, deriveUserAta, deriveMintAuthority,
   deserializeCurveState, deserializeGlobalConfig,
   launchCurve, buyExact, sellExact, airdropSOL,
   TOTAL_SUPPLY, INITIAL_VIRTUAL_SOL_RESERVES, INITIAL_VIRTUAL_TOKEN_RESERVES,
   DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS,
+  TOKEN_NAME, TOKEN_SYMBOL, TOKEN_URI, TOKEN_DECIMALS,
   calculateTokenPriceSol,
   calculateMarketCapSolPrecise,
 } from "./helpers";
+import { getMint, getTokenMetadata, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
 describe("curve", () => {
   let fix: FixtureAccounts;
@@ -47,6 +49,26 @@ describe("curve", () => {
 
       const tokenBalance = await fix.provider.connection.getTokenAccountBalance(curveAta, "confirmed");
       expect(tokenBalance.value.uiAmountString).to.equal("50000000");
+
+      const [mintAuthority] = deriveMintAuthority();
+      const mintInfo = await getMint(
+        fix.provider.connection,
+        mint.publicKey,
+        "confirmed",
+        TOKEN_2022_PROGRAM_ID
+      );
+      expect(mintInfo.decimals).to.equal(TOKEN_DECIMALS);
+
+      const metadata = await getTokenMetadata(
+        fix.provider.connection,
+        mint.publicKey
+      );
+      expect(metadata).to.not.be.null;
+      expect(metadata!.name).to.equal(TOKEN_NAME);
+      expect(metadata!.symbol).to.equal(TOKEN_SYMBOL);
+      expect(metadata!.uri).to.equal(TOKEN_URI);
+      expect(metadata!.updateAuthority!.toBase58()).to.equal(mintAuthority.toBase58());
+      expect(metadata!.mint.toBase58()).to.equal(mint.publicKey.toBase58());
     });
 
     it("rejects duplicate launch (same creator + mint)", async () => {
