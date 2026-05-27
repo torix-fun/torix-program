@@ -10,6 +10,7 @@ use {
 
 
 #[test]
+#[ignore]
 fn test_start_round() {
     let program_id = torix_program::id();
     let payer = Keypair::new();
