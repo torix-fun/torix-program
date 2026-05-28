@@ -13,6 +13,7 @@ use anchor_spl::token_interface::{
 use crate::{
     state::*,
     constants::*,
+    events::*,
     error::ErrorCode,
     math::*,
 };
@@ -201,6 +202,23 @@ pub fn handler(
         .buy_transactions
         .checked_add(1)
         .ok_or(ProgramError::ArithmeticOverflow)?;
+
+    let clock = Clock::get()?;
+
+    emit!(BuyEvent {
+        trader: accs.user.key(),
+        mint: accs.mint.key(),
+        curve: accs.curve.key(),
+        creator: accs.curve.creator,
+        gross_sol_in: sol_in,
+        net_sol_in: net_sol,
+        tokens_out: curve_result.tokens_out,
+        protocol_fee: fee_split.protocol_fee,
+        round_fee: fee_split.round_fee,
+        virtual_sol_reserves_after: curve_result.new_virtual_sol,
+        virtual_token_reserves_after: curve_result.new_virtual_tokens,
+        timestamp: clock.unix_timestamp
+    });
 
     Ok(())
 }

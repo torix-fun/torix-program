@@ -25,6 +25,7 @@ use spl_type_length_value::variable_len_pack::VariableLenPack;
 use crate::{
     state::*,
     constants::*,
+    events::*,
     error::ErrorCode,
 };
 
@@ -188,9 +189,9 @@ pub fn handler(
 
     token_metadata_initialize(
         cpi_ctx, 
-        args.token_name, 
-        args.token_symbol, 
-        args.token_uri
+        args.token_name.clone(), 
+        args.token_symbol.clone(), 
+        args.token_uri.clone()
     )?;
 
     let cpi_ctx = CpiContext::new_with_signer(
@@ -245,6 +246,18 @@ pub fn handler(
     curve.real_reserves_tokens = TOTAL_SUPPLY;
     curve.virtual_reserves_sol = INITIAL_VIRTUAL_SOL_RESERVES;
     curve.virtual_reserves_tokens = INITIAL_VIRTUAL_TOKEN_RESERVES;
+
+    let clock = Clock::get()?;
+
+    emit!(LaunchEvent {
+        creator: accs.user.key(),
+        mint: accs.mint.key(),
+        curve: accs.curve.key(),
+        timestamp: clock.unix_timestamp,
+        token_name: args.token_name,
+        token_symbol: args.token_symbol,
+        token_uri: args.token_uri
+    });
 
     Ok(())
 }
