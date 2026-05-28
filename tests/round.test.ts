@@ -68,36 +68,6 @@ describe("round", () => {
       expect(vaultAcc.bump).to.be.a("number");
     });
 
-    it("re-starts idempotently via init_if_needed", async () => {
-      const ts1 = deserializeRoundState(
-        (await fix.provider.connection.getAccountInfo(fix.round))!.data
-      ).end_timestamp.toNumber();
-
-      await new Promise(r => setTimeout(r, 2000));
-
-      // With init (not init_if_needed), re-initialization is now rejected
-      try {
-        await fix.program.methods
-          .startRound()
-          .accounts({
-            user: fix.authority.publicKey,
-            round: fix.round,
-            roundVault: fix.roundVault,
-            globalConfig: fix.globalConfig,
-          })
-          .signers([fix.authority])
-          .rpc();
-        expect.fail("Expected AccountAlreadyInitialized error");
-      } catch (e: any) {
-        const isAlreadyInit = e instanceof anchor.AnchorError
-          && e.error?.errorCode?.code === "AccountAlreadyInitialized";
-        const hasLog = e.logs?.some(
-          (l: string) => l.includes("already in use") || l.includes("AccountAlreadyInitialized")
-        );
-        expect(isAlreadyInit || hasLog).to.be.true;
-      }
-    });
-
     it("VULN-1 FIXED: start_round rejects when round already exists", async () => {
       const attacker = Keypair.generate();
       await airdropSOL(fix.provider.connection, attacker.publicKey);
