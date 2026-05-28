@@ -25,6 +25,7 @@ use spl_type_length_value::variable_len_pack::VariableLenPack;
 use crate::{
     state::*,
     constants::*,
+    error::ErrorCode,
 };
 
 
@@ -40,7 +41,7 @@ pub struct Launch<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + CurveState::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR_SIZE + CurveState::INIT_SPACE,
         seeds = [
             CURVE_SEED.as_bytes(),
             mint.key().as_ref()
@@ -97,6 +98,10 @@ pub fn handler(
     let accs = ctx.accounts;
     let bumps = ctx.bumps;
 
+    require!(args.token_name.len() <= MAX_TOKEN_NAME_LEN, ErrorCode::MetadataTooLong);
+    require!(args.token_symbol.len() <= MAX_TOKEN_SYMBOL_LEN, ErrorCode::MetadataTooLong);
+    require!(args.token_uri.len() <= MAX_TOKEN_URI_LEN, ErrorCode::MetadataTooLong);
+
     let mint_authority_bump = bumps.mint_authority;
     let signer_seeds = &[
         MINT_AUTHORITY_SEED.as_bytes(),
@@ -121,7 +126,7 @@ pub fn handler(
 
     let mint_space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
 
-    let metadata_space = 4 + token_metadata.get_packed_len()?;
+    let metadata_space = METADATA_TLV_HEADER_SIZE + token_metadata.get_packed_len()?;
 
     let total_space = mint_space + metadata_space;
 

@@ -108,6 +108,11 @@ pub fn handler<'info>(
         let amount = amounts[i];
 
         require!(
+            amount > 0, 
+            ErrorCode::ZeroRewardAmount
+        );
+
+        require!(
             winner.is_writable,
             ErrorCode::WinnerNotWritable
         );

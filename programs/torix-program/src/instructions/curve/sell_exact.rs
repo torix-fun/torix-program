@@ -24,7 +24,7 @@ pub struct SellExact<'info> {
         mut,
         seeds = [
             CURVE_SEED.as_bytes(),
-            curve.mint.as_ref()
+            mint.key().as_ref()
         ],
         bump = curve.bump
     )]
@@ -86,6 +86,8 @@ pub fn handler(
 ) -> Result<()> {
     let accs = ctx.accounts;
 
+    require!(tokens_in > 0, ErrorCode::ZeroTradeAmount);
+
     token_interface::transfer_checked(
         CpiContext::new(
             accs.token_program.key(),
@@ -121,6 +123,26 @@ pub fn handler(
         ErrorCode::SlippageExceeded
     );
 
+    let total_deduction = net_sol_out
+        .checked_add(fee_split.protocol_fee)
+        .ok_or(ProgramError::ArithmeticOverflow)?
+        .checked_add(fee_split.round_fee)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
+
+    let curve_rent_exemption = Rent::get()?
+        .minimum_balance(ANCHOR_DISCRIMINATOR_SIZE + CurveState::INIT_SPACE);
+    
+    let curve_lamports = accs
+        .curve
+        .get_lamports()
+        .saturating_sub(curve_rent_exemption);
+
+    require_gte!(
+        curve_lamports,
+        total_deduction,
+        ErrorCode::InsufficientCurveBalance
+    );
+
     accs.curve.sub_lamports(net_sol_out)?;
     accs.user.add_lamports(net_sol_out)?;
 
@@ -135,8 +157,10 @@ pub fn handler(
     }
 
     let curve = &mut accs.curve;
+
     curve.virtual_reserves_sol = curve_result.new_virtual_sol;
     curve.virtual_reserves_tokens = curve_result.new_virtual_tokens;
+
     curve.real_reserves_sol = curve
         .real_reserves_sol
         .checked_sub(curve_result.gross_sol_out)
@@ -145,6 +169,7 @@ pub fn handler(
         .real_reserves_tokens
         .checked_add(tokens_in)
         .ok_or(ProgramError::ArithmeticOverflow)?;
+    
     curve.stats.volume_sol = curve
         .stats
         .volume_sol

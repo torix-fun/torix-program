@@ -4,7 +4,23 @@ pub use seeds::*;
 pub use time::*;
 pub use curve::*;
 pub use math::*;
+pub use layout::*;
+pub use constraints::*;
 
+
+pub const PROTOCOL_VERSION: u8 = 1;
+
+pub mod constraints {
+    pub const MAX_TOKEN_NAME_LEN: usize = 32;
+    pub const MAX_TOKEN_SYMBOL_LEN: usize = 10;
+    pub const MAX_TOKEN_URI_LEN: usize = 200;
+}
+
+pub mod layout {
+    pub const ANCHOR_DISCRIMINATOR_SIZE: usize = 8;
+
+    pub const METADATA_TLV_HEADER_SIZE: usize = 4;
+}
 
 pub mod seeds {
     use super::*;

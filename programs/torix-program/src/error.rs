@@ -15,5 +15,17 @@ pub enum ErrorCode {
     InsufficientOutputAmount,
 
     #[msg("Instruction not yet implemented")]
-    NotImplemented
+    NotImplemented,
+
+    #[msg("Reward amount must be greater than zero")]
+    ZeroRewardAmount,
+
+    #[msg("Insufficient curve balance for sell")]
+    InsufficientCurveBalance,
+
+    #[msg("Trade amount must be greater than zero")]
+    ZeroTradeAmount,
+
+    #[msg("Token metadata exceeds maximum length")]
+    MetadataTooLong,
 }

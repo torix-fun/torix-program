@@ -12,9 +12,9 @@ pub struct StartRound<'info> {
     pub user: Signer<'info>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = user,
-        space = 8 + RoundState::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR_SIZE + RoundState::INIT_SPACE,
         seeds = [
             ROUND_SEED.as_bytes()
         ],
@@ -23,9 +23,9 @@ pub struct StartRound<'info> {
     pub round: Account<'info, RoundState>,
 
     #[account(
-        init_if_needed,
+        init,
         payer = user,
-        space = 8 + RoundVault::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR_SIZE + RoundVault::INIT_SPACE,
         seeds = [
             ROUND_VAULT_SEED.as_bytes(),
             round.key().to_bytes().as_ref()

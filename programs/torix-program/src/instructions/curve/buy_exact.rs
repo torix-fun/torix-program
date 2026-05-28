@@ -89,6 +89,8 @@ pub fn handler(
 ) -> Result<()> {
     let accs = ctx.accounts;
 
+    require!(sol_in > 0, ErrorCode::ZeroTradeAmount);
+
     let fee_split = calculate_fee_split(
         sol_in,
         accs.global_config.fee_bps,
@@ -176,8 +178,10 @@ pub fn handler(
     )?;
 
     let curve = &mut accs.curve;
+
     curve.virtual_reserves_sol = curve_result.new_virtual_sol;
     curve.virtual_reserves_tokens = curve_result.new_virtual_tokens;
+    
     curve.real_reserves_sol = curve
         .real_reserves_sol
         .checked_add(net_sol)
@@ -186,6 +190,7 @@ pub fn handler(
         .real_reserves_tokens
         .checked_sub(curve_result.tokens_out)
         .ok_or(ProgramError::ArithmeticOverflow)?;
+    
     curve.stats.volume_sol = curve
         .stats
         .volume_sol

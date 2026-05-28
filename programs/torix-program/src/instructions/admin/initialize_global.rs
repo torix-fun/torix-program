@@ -15,7 +15,7 @@ pub struct InitializeGlobal<'info> {
     #[account(
         init,
         payer = user,
-        space = 8 + GlobalConfig::INIT_SPACE,
+        space = ANCHOR_DISCRIMINATOR_SIZE + GlobalConfig::INIT_SPACE,
         seeds = [
             GLOBAL_CONFIG_SEED.as_bytes()
         ],
@@ -38,7 +38,7 @@ pub fn handler(
     );
 
     config.bump = ctx.bumps.global_config;
-    config.protocol_version = 1;
+    config.protocol_version = PROTOCOL_VERSION;
 
     configure_global(
         config, 
