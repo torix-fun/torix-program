@@ -2,17 +2,17 @@ import { expect } from "chai";
 import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import * as anchor from "@coral-xyz/anchor";
 import {
-  getFixture, FixtureAccounts,
+  getFixture, getFixtureWithCurve, FixtureAccounts,
   deriveCurve, deriveCurveAta, deriveUserAta, deriveMintAuthority,
   deserializeCurveState, deserializeGlobalConfig,
   launchCurve, buyExact, sellExact, airdropSOL,
   TOTAL_SUPPLY, INITIAL_VIRTUAL_SOL_RESERVES, INITIAL_VIRTUAL_TOKEN_RESERVES,
-  DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS,
+  DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS, FEE_DENOMINATOR,
   TOKEN_NAME, TOKEN_SYMBOL, TOKEN_URI, TOKEN_DECIMALS,
   calculateTokenPriceSol,
   calculateMarketCapSolPrecise,
 } from "./helpers";
-import { getMint, getTokenMetadata, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { getMint, getTokenMetadata, getOrCreateAssociatedTokenAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
 describe("curve", () => {
   let fix: FixtureAccounts;
@@ -230,7 +230,7 @@ describe("curve", () => {
       }
     });
 
-    it("rejects zero SOL input (InsufficientOutputAmount)", async () => {
+    it("rejects zero SOL input (ZeroTradeAmount)", async () => {
       const { mint, curve } = await setupBuy();
 
       try {
@@ -239,13 +239,13 @@ describe("curve", () => {
           new anchor.BN(0),
           new anchor.BN(0),
         );
-        expect.fail("Expected InsufficientOutputAmount");
+        expect.fail("Expected ZeroTradeAmount");
       } catch (e: any) {
         const code = e instanceof anchor.AnchorError
           ? e.error?.errorCode?.code
           : null;
-        const hasLog = e.logs?.some((l: string) => l.includes("InsufficientOutputAmount") || l.includes("6003"));
-        expect(code === "InsufficientOutputAmount" || hasLog).to.be.true;
+        const hasLog = e.logs?.some((l: string) => l.includes("ZeroTradeAmount") || l.includes("6008"));
+        expect(code === "ZeroTradeAmount" || hasLog).to.be.true;
       }
     });
   });
@@ -430,6 +430,64 @@ describe("curve", () => {
         expect(code === "AccountNotInitialized" || hasLog).to.be.true;
       }
     });
+
+    it("VULN-7 FIXED: sellExact rejects wrong mint (curve seeds mismatch)", async () => {
+      const { mint: mintA, curve: curveA } = await setupSell();
+
+      // Create a second real mint (mintB) with its own curve
+      const mintB = Keypair.generate();
+      await launchCurve(fix.program, fix.creator, mintB);
+      const [curveB] = deriveCurve(mintB.publicKey);
+
+      // Buyer buys some mintB tokens so userTokenAccount exists
+      const solInB = new anchor.BN(50_000_000);
+      const k = INITIAL_VIRTUAL_SOL_RESERVES.mul(INITIAL_VIRTUAL_TOKEN_RESERVES);
+      const totalFeeB = solInB.muln(DEFAULT_FEE_BPS).divn(10000);
+      const netSolB = solInB.sub(totalFeeB);
+      const newVSolB = INITIAL_VIRTUAL_SOL_RESERVES.add(netSolB);
+      const newVTokB = k.div(newVSolB);
+      const tokensOutB = INITIAL_VIRTUAL_TOKEN_RESERVES.sub(newVTokB);
+      const minTokensB = tokensOutB.sub(tokensOutB.divn(100));
+      await buyExact(fix.program, fix.buyer, curveB, mintB.publicKey, solInB, minTokensB);
+
+      // Create curveA's ATA for mintB (required for the attack)
+      await getOrCreateAssociatedTokenAccount(
+        fix.provider.connection, fix.buyer, mintB.publicKey, curveA,
+        true, undefined, undefined, TOKEN_2022_PROGRAM_ID
+      );
+
+      // Try: sell mintB tokens, but pass curveA (wrong curve)
+      const userTokenBalB = await fix.provider.connection.getTokenAccountBalance(
+        deriveUserAta(fix.buyer.publicKey, mintB.publicKey), "confirmed"
+      );
+      const tokensIn = new anchor.BN(userTokenBalB.value.amount).divn(2);
+
+      try {
+        await fix.program.methods
+          .sellExact(tokensIn, new anchor.BN(0))
+          .accounts({
+            user: fix.buyer.publicKey,
+            curve: curveA,
+            globalConfig: fix.globalConfig,
+            round: fix.round,
+            roundVault: fix.roundVault,
+            feeRecipient: deserializeGlobalConfig(
+              (await fix.provider.connection.getAccountInfo(fix.globalConfig))!.data
+            ).fee_recipient,
+            mint: mintB.publicKey,
+            curveTokenAccount: deriveCurveAta(curveA, mintB.publicKey),
+            userTokenAccount: deriveUserAta(fix.buyer.publicKey, mintB.publicKey),
+          })
+          .signers([fix.buyer])
+          .rpc();
+        expect.fail("Expected ConstraintSeeds for wrong mint");
+      } catch (e: any) {
+        const code = e instanceof anchor.AnchorError
+          ? e.error?.errorCode?.code
+          : null;
+        expect(code).to.equal("ConstraintSeeds");
+      }
+    });
   });
 
   describe("price", () => {
@@ -578,6 +636,62 @@ describe("curve", () => {
 
       console.log(`Token sol price after 1st sell with ${tokensFromFourthBuy} TOKENS: `, calculateTokenPriceSol(curveStateAfterSell));
       console.log("Token sol MCAP after 1st sell: ", calculateMarketCapSolPrecise(curveStateAfterSell));
+    });
+
+    it("VULN-4 FIXED: buy_exact rejects sol_in=0", async () => {
+      const fix = await getFixtureWithCurve();
+
+      try {
+        await buyExact(
+          fix.program, fix.buyer, fix.curve, fix.mint.publicKey,
+          new anchor.BN(0),
+          new anchor.BN(0),
+        );
+        expect.fail("Expected ZeroTradeAmount error");
+      } catch (e: any) {
+        const code = e instanceof anchor.AnchorError
+          ? e.error?.errorCode?.code
+          : null;
+        const hasLog = e.logs?.some(
+          (l: string) => l.includes("ZeroTradeAmount")
+        );
+        expect(code === "ZeroTradeAmount" || hasLog).to.be.true;
+      }
+    });
+
+    it("VULN-5 FIXED: launch rejects metadata exceeding length limits", async () => {
+      const fix = await getFixture();
+      const mint = Keypair.generate();
+
+      try {
+        await fix.program.methods
+          .launch({
+            tokenName: "A".repeat(33),
+            tokenSymbol: "TEST",
+            tokenUri: "https://example.com",
+          })
+          .accounts({
+            user: fix.creator.publicKey,
+            mint: mint.publicKey,
+            curve: deriveCurve(mint.publicKey)[0],
+            globalConfig: fix.globalConfig,
+            round: fix.round,
+            mintAuthority: deriveMintAuthority()[0],
+            curveTokenAccount: deriveCurveAta(deriveCurve(mint.publicKey)[0], mint.publicKey),
+          })
+          .signers([fix.creator, mint])
+          .rpc();
+
+        expect.fail("Expected MetadataTooLong error");
+      } catch (e: any) {
+        const code = e instanceof anchor.AnchorError
+          ? e.error?.errorCode?.code
+          : null;
+        const hasLog = e.logs?.some(
+          (l: string) => l.includes("MetadataTooLong")
+        );
+        expect(code === "MetadataTooLong" || hasLog).to.be.true;
+      }
     });
   });
 });

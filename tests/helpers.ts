@@ -19,6 +19,7 @@ export const PROGRAM_ID = new PublicKey("torXFavtJnaJzW7fz2NVrg9f1j824GitYi69zhm
 
 export const FEE_DENOMINATOR = 10_000;
 export const ONE_DAY_IN_SECONDS = 86_400;
+export const SHORT_ROUND_SECS = 1;
 
 export const ROUND_SEED = "round";
 export const ROUND_VAULT_SEED = "round_vault";
@@ -419,6 +420,7 @@ export async function getFixture(): Promise<FixtureAccounts> {
     await airdropSOL(provider.connection, kp.publicKey);
   }
 
+  // Use SHORT_ROUND_SECS for faster test execution
   await initializeGlobal(program, authority, {
     protocolAuthority: authority.publicKey,
     endRoundAuthority: endRoundAuthority.publicKey,
@@ -426,7 +428,7 @@ export async function getFixture(): Promise<FixtureAccounts> {
     winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
     feeBps: DEFAULT_FEE_BPS,
     roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-    roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+    roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
     feeRecipient: feeRecipient.publicKey,
   });
 
