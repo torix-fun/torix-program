@@ -4,7 +4,7 @@ import {
 } from "@coral-xyz/anchor";
 import {
   Connection, PublicKey, Keypair, LAMPORTS_PER_SOL,
-  SystemProgram, Transaction,
+  SystemProgram, Transaction
 } from "@solana/web3.js";
 import {
   TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -16,6 +16,7 @@ import * as path from "path";
 // ─── Constants ───────────────────────────────────────────────
 
 export const PROGRAM_ID = new PublicKey("torXFavtJnaJzW7fz2NVrg9f1j824GitYi69zhmJQBK");
+export const BPF_LOADER_UPGRADEABLE_PROGRAM_ID = new PublicKey("BPFLoaderUpgradeab1e11111111111111111111111");
 
 export const FEE_DENOMINATOR = 10_000;
 export const ONE_DAY_IN_SECONDS = 86_400;
@@ -187,6 +188,36 @@ export function deserializeCurveState(data: Buffer): any {
 
 export async function initializeGlobal(
   program: Program,
+  args: {
+    protocolAuthority: PublicKey;
+    endRoundAuthority: PublicKey;
+    migrationAuthority: PublicKey;
+    winnersPerRound: number;
+    feeBps: number;
+    roundFeeBps: number;
+    roundDurationSeconds: anchor.BN;
+    feeRecipient: PublicKey;
+  }
+): Promise<void> {
+  const [programDataAddress] = PublicKey.findProgramAddressSync(
+    [program.programId.toBuffer()],
+    BPF_LOADER_UPGRADEABLE_PROGRAM_ID
+  );
+
+  const user = program.provider.publicKey!;
+
+  await program.methods
+    .initializeGlobal(args)
+    .accounts({ 
+      user,
+      program: program.programId,
+      programData: programDataAddress 
+    })
+    .rpc();
+}
+
+export async function initializeGlobalWithImposter(
+  program: Program,
   authority: Keypair,
   args: {
     protocolAuthority: PublicKey;
@@ -199,9 +230,22 @@ export async function initializeGlobal(
     feeRecipient: PublicKey;
   }
 ): Promise<void> {
+  const [programDataAddress] = PublicKey.findProgramAddressSync(
+    [program.programId.toBuffer()],
+    BPF_LOADER_UPGRADEABLE_PROGRAM_ID
+  );
+
+  const user = authority.publicKey;
+
+  console.log("imposter deployer", user.toBase58());
+
   await program.methods
     .initializeGlobal(args)
-    .accounts({ user: authority.publicKey })
+    .accounts({ 
+      user,
+      program: program.programId,
+      programData: programDataAddress 
+    })
     .signers([authority])
     .rpc();
 }
@@ -421,18 +465,18 @@ export async function getFixture(): Promise<FixtureAccounts> {
   }
 
   // Use SHORT_ROUND_SECS for faster test execution
-  await initializeGlobal(program, authority, {
-    protocolAuthority: authority.publicKey,
-    endRoundAuthority: endRoundAuthority.publicKey,
-    migrationAuthority: migrationAuthority.publicKey,
-    winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
-    feeBps: DEFAULT_FEE_BPS,
-    roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-    roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
-    feeRecipient: feeRecipient.publicKey,
-  });
+  // await initializeGlobal(program, {
+  //   protocolAuthority: authority.publicKey,
+  //   endRoundAuthority: endRoundAuthority.publicKey,
+  //   migrationAuthority: migrationAuthority.publicKey,
+  //   winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
+  //   feeBps: DEFAULT_FEE_BPS,
+  //   roundFeeBps: DEFAULT_ROUND_FEE_BPS,
+  //   roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
+  //   feeRecipient: feeRecipient.publicKey,
+  // });
 
-  await startRound(program, authority);
+  // await startRound(program, authority);
 
   _fixture = {
     program, provider, authority, endRoundAuthority,

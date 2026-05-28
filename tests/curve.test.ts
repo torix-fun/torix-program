@@ -11,6 +11,7 @@ import {
   TOKEN_NAME, TOKEN_SYMBOL, TOKEN_URI, TOKEN_DECIMALS,
   calculateTokenPriceSol,
   calculateMarketCapSolPrecise,
+  startRound,
 } from "./helpers";
 import { getMint, getTokenMetadata, getOrCreateAssociatedTokenAccount, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
@@ -19,6 +20,7 @@ describe("curve", () => {
 
   before(async () => {
     fix = await getFixture();
+    await startRound(fix.program, fix.authority);
   });
 
   describe("launch", () => {

@@ -5,7 +5,8 @@ import {
   getFixture, FixtureAccounts, initializeGlobal,
   deserializeGlobalConfig, airdropSOL,
   DEFAULT_FEE_BPS, DEFAULT_ROUND_FEE_BPS, DEFAULT_WINNERS_PER_ROUND,
-  ONE_DAY_IN_SECONDS,
+  initializeGlobalWithImposter,
+  SHORT_ROUND_SECS
 } from "./helpers";
 
 describe("admin", () => {
@@ -17,7 +18,37 @@ describe("admin", () => {
   });
 
   describe("initializeGlobal", () => {
+    it("VULN 8 FIXED: rejects initialization with imposter authority (non deployer)", async () => {
+      try {
+        await initializeGlobalWithImposter(fix.program, fix.authority, {
+          protocolAuthority: fix.authority.publicKey,
+          endRoundAuthority: fix.authority.publicKey,
+          migrationAuthority: fix.authority.publicKey,
+          winnersPerRound: 1,
+          feeBps: DEFAULT_FEE_BPS,
+          roundFeeBps: DEFAULT_ROUND_FEE_BPS,
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
+          feeRecipient: Keypair.generate().publicKey,
+        });
+        expect.fail("Expected initialization with non deployer authority to fail");
+      } catch (e: any) {
+        const msg = e.logs ? e.logs.join(" ") : e.message || "";
+        expect(msg).to.include("Incorrect authority provided"); 
+      }
+    });
+
     it("happy path: initializes with all 7 args and checks on-chain state", async () => {
+      await initializeGlobal(fix.program, {
+        protocolAuthority: fix.authority.publicKey,
+        endRoundAuthority: fix.endRoundAuthority.publicKey,
+        migrationAuthority: fix.migrationAuthority.publicKey,
+        winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
+        feeBps: DEFAULT_FEE_BPS,
+        roundFeeBps: DEFAULT_ROUND_FEE_BPS,
+        roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
+        feeRecipient: fix.feeRecipient.publicKey,
+      });
+      
       const state = deserializeGlobalConfig(
         (await fix.provider.connection.getAccountInfo(fix.globalConfig))!.data
       );
@@ -34,14 +65,14 @@ describe("admin", () => {
 
     it("rejects re-initialization (account already in use)", async () => {
       try {
-        await initializeGlobal(fix.program, fix.authority, {
+        await initializeGlobal(fix.program, {
           protocolAuthority: fix.authority.publicKey,
           endRoundAuthority: fix.authority.publicKey,
           migrationAuthority: fix.authority.publicKey,
           winnersPerRound: 1,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: Keypair.generate().publicKey,
         });
         expect.fail("Expected re-initialization to fail");
@@ -60,7 +91,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: 15000,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -81,7 +112,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -98,7 +129,7 @@ describe("admin", () => {
           winnersPerRound: 0,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -119,7 +150,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -142,7 +173,7 @@ describe("admin", () => {
           winnersPerRound: 5,
           feeBps: 500,
           roundFeeBps: 200,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: newFeeRecipient,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -169,7 +200,7 @@ describe("admin", () => {
           winnersPerRound: DEFAULT_WINNERS_PER_ROUND,
           feeBps: DEFAULT_FEE_BPS,
           roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-          roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+          roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
           feeRecipient: fix.feeRecipient.publicKey,
         })
         .accounts({ user: fix.authority.publicKey, globalConfig: fix.globalConfig })
@@ -190,7 +221,7 @@ describe("admin", () => {
             winnersPerRound: 1,
             feeBps: DEFAULT_FEE_BPS,
             roundFeeBps: DEFAULT_ROUND_FEE_BPS,
-            roundDurationSeconds: new anchor.BN(ONE_DAY_IN_SECONDS),
+            roundDurationSeconds: new anchor.BN(SHORT_ROUND_SECS),
             feeRecipient: Keypair.generate().publicKey,
           })
           .accounts({ user: impostor.publicKey, globalConfig: fix.globalConfig })

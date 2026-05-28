@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use crate::{
     state::*,
     constants::*,
+    program::TorixProgram
 };
 use super::*;
 
@@ -22,6 +23,17 @@ pub struct InitializeGlobal<'info> {
         bump
     )]
     pub global_config: Account<'info, GlobalConfig>,
+
+    #[account(
+        constraint = program.programdata_address()? == Some(program_data.key())
+    )]
+    pub program: Program<'info, TorixProgram>,
+
+    #[account(
+        constraint = program_data.upgrade_authority_address == Some(user.key()) 
+            @ ProgramError::IncorrectAuthority
+    )]
+    pub program_data: Account<'info, ProgramData>,
 
     pub system_program: Program<'info, System>
 }
