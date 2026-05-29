@@ -67,6 +67,7 @@ pub fn handler<'info>(
     let remaining_accs = ctx.remaining_accounts;
 
     let clock = Clock::get()?;
+    let rent = Rent::get()?;
 
     require!(
         clock.unix_timestamp >= accs.round.end_timestamp,
@@ -94,8 +95,17 @@ pub fn handler<'info>(
         winners_per_round
     );
 
+    let vault_balance = accs
+        .round_vault
+        .get_lamports();
+    let vault_rent_exemption = rent
+        .minimum_balance(ANCHOR_DISCRIMINATOR_SIZE + RoundVault::INIT_SPACE);
+
+    let vault_balance_without_rent = vault_balance
+        .saturating_sub(vault_rent_exemption); 
+
     require_gte!(
-        accs.round_vault.get_lamports(),
+        vault_balance_without_rent,
         total_transfers_amount
     );
 

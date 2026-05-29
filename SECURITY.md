@@ -33,7 +33,7 @@ The `RoundVault` only receives SOL via `round_fee` deductions on `buy_exact` and
 - `now >= round.end_timestamp` — round must actually be over.
 - `amounts.len() == winners_per_round` — exactly the configured number of payouts.
 - Each `amount > 0` — no zero-reward winners.
-- `vault_balance >= sum(amounts)` — vault is solvent for the proposed payouts.
+- `vault_balance - rent >= sum(amounts)` — vault is solvent for the proposed payouts.
 - `winner.is_writable` — winner accounts can receive lamports.
 - `curve.owner == torix_program::ID` — curves are real program accounts.
 - `curve_state.round == current_round` — curves belong to the round being closed.

@@ -194,7 +194,7 @@ Closes the current round and distributes vault SOL to winning creators.
 - Round must be over (`now >= end_timestamp`).
 - `amounts.len() == winners_per_round`.
 - Each `amount > 0`.
-- Vault balance ≥ sum of all amounts.
+- Vault balance - rent ≥ sum of all amounts.
 - `curve.creator == winner` for each pair.
 - `curve.round == current_round` for each curve.
 
