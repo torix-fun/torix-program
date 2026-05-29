@@ -34,6 +34,12 @@ pub struct BuyExact<'info> {
     )]
     pub curve: Account<'info, CurveState>,
 
+    #[account(
+        seeds = [
+            GLOBAL_CONFIG_SEED.as_bytes()
+        ],
+        bump = global_config.bump
+    )]
     pub global_config: Account<'info, GlobalConfig>,
 
     #[account(
