@@ -322,6 +322,29 @@ describe("curve", () => {
         .to.be.at.least(vaultBefore + roundFee.toNumber());
     });
 
+    it("allows selling 100% of token balance", async () => {
+      const { mint, curve } = await setupSell();
+
+      const userTokenBefore = await fix.provider.connection.getTokenAccountBalance(
+        deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
+      );
+
+      const tokensIn = new anchor.BN(userTokenBefore.value.amount);
+
+      const tx = await sellExact(
+        fix.program, fix.buyer, curve, mint.publicKey,
+        tokensIn,
+        new anchor.BN(0),
+      );
+
+      console.log("Sell 100% transaction: ", tx);
+
+      const userTokenAfter = await fix.provider.connection.getTokenAccountBalance(
+        deriveUserAta(fix.buyer.publicKey, mint.publicKey), "confirmed"
+      );
+      expect(new anchor.BN(userTokenAfter.value.amount).toNumber()).to.equal(0);
+    });
+
     it("rejects SlippageExceeded", async () => {
       const { mint, curve } = await setupSell();
       const userTokenBefore = await fix.provider.connection.getTokenAccountBalance(
