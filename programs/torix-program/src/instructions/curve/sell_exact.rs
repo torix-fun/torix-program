@@ -115,13 +115,23 @@ pub fn handler(
         tokens_in,
     )?;
 
+    let curve_rent_exemption = Rent::get()?
+        .minimum_balance(ANCHOR_DISCRIMINATOR_SIZE + CurveState::INIT_SPACE);
+
+    let curve_lamports = accs
+        .curve
+        .get_lamports()
+        .saturating_sub(curve_rent_exemption);
+
+    let gross_sol_out = curve_result.gross_sol_out.min(curve_lamports);
+
     let fee_split = calculate_fee_split(
-        curve_result.gross_sol_out,
+        gross_sol_out,
         accs.global_config.fee_bps,
         accs.global_config.round_fee_bps,
     )?;
 
-    let net_sol_out = curve_result.gross_sol_out
+    let net_sol_out = gross_sol_out
         .checked_sub(fee_split.total_fee)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
@@ -135,14 +145,6 @@ pub fn handler(
         .ok_or(ProgramError::ArithmeticOverflow)?
         .checked_add(fee_split.round_fee)
         .ok_or(ProgramError::ArithmeticOverflow)?;
-
-    let curve_rent_exemption = Rent::get()?
-        .minimum_balance(ANCHOR_DISCRIMINATOR_SIZE + CurveState::INIT_SPACE);
-    
-    let curve_lamports = accs
-        .curve
-        .get_lamports()
-        .saturating_sub(curve_rent_exemption);
 
     require_gte!(
         curve_lamports,
@@ -165,22 +167,27 @@ pub fn handler(
 
     let curve = &mut accs.curve;
 
-    curve.virtual_reserves_sol = curve_result.new_virtual_sol;
+    let new_virtual_sol = curve
+        .virtual_reserves_sol
+        .checked_sub(gross_sol_out)
+        .ok_or(ProgramError::ArithmeticOverflow)?;
+
+    curve.virtual_reserves_sol = new_virtual_sol;
     curve.virtual_reserves_tokens = curve_result.new_virtual_tokens;
 
     curve.real_reserves_sol = curve
         .real_reserves_sol
-        .checked_sub(curve_result.gross_sol_out)
+        .checked_sub(gross_sol_out)
         .ok_or(ProgramError::ArithmeticOverflow)?;
     curve.real_reserves_tokens = curve
         .real_reserves_tokens
         .checked_add(tokens_in)
         .ok_or(ProgramError::ArithmeticOverflow)?;
-    
+
     curve.stats.volume_sol = curve
         .stats
         .volume_sol
-        .checked_add(curve_result.gross_sol_out)
+        .checked_add(gross_sol_out)
         .ok_or(ProgramError::ArithmeticOverflow)?;
     curve.stats.sell_transactions = curve
         .stats
@@ -196,11 +203,11 @@ pub fn handler(
         curve: accs.curve.key(),
         creator: accs.curve.creator,
         tokens_in,
-        gross_sol_out: curve_result.gross_sol_out,
+        gross_sol_out,
         net_sol_out,
         protocol_fee: fee_split.protocol_fee,
         round_fee: fee_split.round_fee,
-        virtual_sol_reserves_after: curve_result.new_virtual_sol,
+        virtual_sol_reserves_after: new_virtual_sol,
         virtual_token_reserves_after: curve_result.new_virtual_tokens,
         timestamp: clock.unix_timestamp
     });
